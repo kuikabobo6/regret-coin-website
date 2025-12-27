@@ -1,29 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$REGRET — Memecoin Therapy on Solana</title>
+    <title>$REGRET - Terapia Crypto que Paga</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y='.9em' font-size='90' fill='%23FFD166'>😭</text></svg>">
+    <!-- Solana Web3.js -->
+    <script src="https://unpkg.com/@solana/web3.js@1.78.0/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@0.9.23/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-wallets@0.19.32/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-phantom@0.9.15/lib/index.iife.js"></script>
     
     <style>
         :root {
-            /* Paleta Crypto Moderna */
-            --neon-blue: #00f3ff;
-            --electric-purple: #9d4edd;
-            --solana-green: #00ffa3;
-            --crypto-yellow: #FFD166;
-            --dark-space: #0a0b0f;
-            --card-dark: #121420;
-            --text-primary: #ffffff;
-            --text-secondary: #b8b9c5;
-            --gradient-main: linear-gradient(135deg, var(--neon-blue) 0%, var(--electric-purple) 100%);
-            --gradient-solana: linear-gradient(135deg, var(--solana-green) 0%, #14f195 100%);
-            --gradient-glow: linear-gradient(135deg, rgba(0, 243, 255, 0.15) 0%, rgba(157, 78, 221, 0.15) 100%);
+            --cry-blue: #4A90E2;
+            --tear-yellow: #FFD166;
+            --therapy-green: #00CC88;
+            --regret-purple: #9D4EDD;
+            --dark-bg: #0F0F23;
+            --card-bg: #1A1A2E;
+            --text-light: #F0F0F0;
+            --text-muted: #B8B8D1;
+            --shadow-glow: 0 0 20px rgba(255, 209, 102, 0.3);
+            --error-red: #FF6B6B;
+            --success-green: #00CC88;
         }
 
         * {
@@ -33,411 +36,109 @@
         }
 
         body {
-            font-family: 'Space Grotesk', sans-serif;
-            background-color: var(--dark-space);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Efectos de fondo animados */
-        .bg-grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            font-family: 'Fredoka', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
             background-image: 
-                linear-gradient(rgba(10, 11, 15, 0.9), rgba(10, 11, 15, 0.9)),
-                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%2300f3ff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
-            z-index: -2;
+                radial-gradient(circle at 10% 20%, rgba(74, 144, 226, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 209, 102, 0.1) 0%, transparent 20%);
+            min-height: 100vh;
+            padding-bottom: 20px;
         }
 
-        .floating-shapes {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            opacity: 0.1;
-            filter: blur(40px);
-        }
-
-        .shape-1 {
-            width: 500px;
-            height: 500px;
-            background: var(--neon-blue);
-            top: -200px;
-            right: -100px;
-            animation: float 25s infinite ease-in-out;
-        }
-
-        .shape-2 {
-            width: 400px;
-            height: 400px;
-            background: var(--electric-purple);
-            bottom: -150px;
-            left: -100px;
-            animation: float 30s infinite ease-in-out reverse;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-        }
-
-        /* Contenedor principal */
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
-            position: relative;
-            z-index: 1;
         }
 
-        /* Header y Navegación */
+        /* Header */
         header {
-            padding: 2rem 0;
+            padding: 1.5rem 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 2px dashed var(--cry-blue);
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
-        .logo-container {
+        .logo {
             display: flex;
             align-items: center;
             gap: 15px;
+            text-decoration: none;
         }
 
         .logo-emoji {
-            font-size: 3.5rem;
-            filter: drop-shadow(0 0 10px rgba(255, 209, 102, 0.5));
-            animation: pulse 2s infinite;
+            font-size: 3rem;
+            animation: tearDrop 3s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        @keyframes tearDrop {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
         }
 
         .logo-text {
-            font-family: 'Oxanium', monospace;
-            font-weight: 800;
             font-size: 2.5rem;
-            background: var(--gradient-main);
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--tear-yellow), var(--cry-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
         }
 
-        .nav-links {
+        .social-links {
             display: flex;
-            gap: 2rem;
-        }
-
-        .nav-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s;
-            position: relative;
-            padding: 5px 0;
-        }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-        }
-
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--gradient-main);
-            transition: width 0.3s;
-        }
-
-        .nav-link:hover::after {
-            width: 100%;
-        }
-
-        .connect-btn {
-            background: var(--gradient-main);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 50px;
-            font-family: 'Oxanium', monospace;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 5px 15px rgba(0, 243, 255, 0.2);
-        }
-
-        .connect-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 243, 255, 0.3);
-        }
-
-        /* Hero Section */
-        .hero {
-            padding: 6rem 0 4rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero h1 {
-            font-family: 'Oxanium', monospace;
-            font-size: 4.5rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(to right, var(--text-primary), var(--neon-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 5px 15px rgba(0, 243, 255, 0.2);
-        }
-
-        .hero p {
-            font-size: 1.3rem;
-            color: var(--text-secondary);
-            max-width: 700px;
-            margin: 0 auto 3rem;
-            line-height: 1.6;
-        }
-
-        .stats {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            margin-bottom: 3rem;
+            gap: 15px;
             flex-wrap: wrap;
         }
 
-        .stat-box {
-            text-align: center;
+        .social-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: var(--card-bg);
+            color: var(--text-light);
+            border: 2px solid var(--cry-blue);
         }
 
-        .stat-number {
-            font-family: 'Oxanium', monospace;
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .social-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-glow);
+            background: var(--cry-blue);
         }
 
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Sección de Airdrop - ¡LA PARTE IMPORTANTE! */
-        .airdrop-section {
-            background: rgba(18, 20, 32, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 243, 255, 0.1);
-            border-radius: 25px;
-            padding: 3rem;
-            margin: 4rem 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .airdrop-section::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: var(--gradient-glow);
-            opacity: 0.1;
-            z-index: -1;
-        }
-
-        .airdrop-title {
-            font-family: 'Oxanium', monospace;
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: var(--gradient-solana);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        /* Wallet Status */
+        .wallet-status {
             display: flex;
             align-items: center;
             gap: 15px;
-        }
-
-        .airdrop-subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 2.5rem;
-            font-size: 1.1rem;
-        }
-
-        .airdrop-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-        }
-
-        .airdrop-visual {
-            text-align: center;
-            position: relative;
-        }
-
-        .token-animation {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            margin: 0 auto;
-        }
-
-        .token-core {
-            width: 150px;
-            height: 150px;
-            background: var(--gradient-main);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 4rem;
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.5);
-            animation: rotate 20s linear infinite;
-        }
-
-        .orbiting-token {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: var(--gradient-solana);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 0 20px rgba(0, 255, 163, 0.5);
-        }
-
-        .token-1 {
-            top: 20%;
-            left: 20%;
-            animation: orbit1 10s linear infinite;
-        }
-
-        .token-2 {
-            top: 20%;
-            right: 20%;
-            animation: orbit2 12s linear infinite;
-        }
-
-        .token-3 {
-            bottom: 20%;
-            left: 20%;
-            animation: orbit3 15s linear infinite;
-        }
-
-        @keyframes rotate {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        @keyframes orbit1 {
-            0% { transform: rotate(0deg) translateX(100px) rotate(0deg); }
-            100% { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
-        }
-
-        @keyframes orbit2 {
-            0% { transform: rotate(0deg) translateX(80px) rotate(0deg); }
-            100% { transform: rotate(360deg) translateX(80px) rotate(-360deg); }
-        }
-
-        @keyframes orbit3 {
-            0% { transform: rotate(0deg) translateX(120px) rotate(0deg); }
-            100% { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
-        }
-
-        .airdrop-form {
-            background: rgba(10, 11, 15, 0.7);
-            border-radius: 20px;
-            padding: 2rem;
-            border: 1px solid rgba(0, 243, 255, 0.2);
-        }
-
-        .form-title {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-secondary);
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            border-radius: 10px;
-            color: white;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-        }
-
-        .wallet-connected {
-            background: rgba(0, 255, 163, 0.1);
-            border: 1px solid var(--solana-green);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border-radius: 50px;
+            border: 2px solid var(--therapy-green);
+            margin-left: auto;
         }
 
         .wallet-address {
             font-family: monospace;
             font-size: 0.9rem;
-            color: var(--solana-green);
+            color: var(--therapy-green);
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .disconnect-btn {
             background: transparent;
-            border: 1px solid var(--solana-green);
-            color: var(--solana-green);
+            border: 1px solid var(--error-red);
+            color: var(--error-red);
             padding: 5px 10px;
             border-radius: 5px;
             cursor: pointer;
@@ -446,731 +147,697 @@
         }
 
         .disconnect-btn:hover {
-            background: rgba(0, 255, 163, 0.2);
+            background: rgba(255, 107, 107, 0.2);
         }
 
-        .submit-btn {
-            width: 100%;
-            padding: 18px;
-            background: var(--gradient-solana);
-            color: #0a0b0f;
-            border: none;
-            border-radius: 10px;
-            font-family: 'Oxanium', monospace;
-            font-weight: 700;
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 3rem 0 2rem;
+        }
+
+        .hero-title {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .hero-title .highlight {
+            background: linear-gradient(45deg, var(--tear-yellow), var(--therapy-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px var(--tear-yellow); }
+            to { text-shadow: 0 0 20px var(--therapy-green); }
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            line-height: 1.6;
+        }
+
+        /* Airdrop Section */
+        .airdrop-section {
+            background: linear-gradient(135deg, var(--card-bg), #222244);
+            border-radius: 25px;
+            padding: 2.5rem;
+            margin: 2rem auto;
+            max-width: 800px;
+            border: 3px solid var(--tear-yellow);
+            box-shadow: var(--shadow-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .airdrop-section::before {
+            content: "🎁";
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 8rem;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        .airdrop-title {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+            color: var(--tear-yellow);
+        }
+
+        .airdrop-subtitle {
             font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .airdrop-note {
+            background: rgba(255, 209, 102, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--tear-yellow);
+        }
+
+        .airdrop-note h4 {
+            color: var(--tear-yellow);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Wallet Selector */
+        .wallet-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 1.5rem 0;
+        }
+
+        .wallet-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--cry-blue);
+            border-radius: 15px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wallet-option:hover {
+            transform: translateY(-5px);
+            background: rgba(74, 144, 226, 0.2);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .wallet-option.selected {
+            background: rgba(0, 204, 136, 0.2);
+            border-color: var(--therapy-green);
+        }
+
+        .wallet-icon {
+            font-size: 2rem;
+        }
+
+        .wallet-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Main Connect Button */
+        .connect-main {
+            background: linear-gradient(45deg, var(--therapy-green), var(--cry-blue));
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 15px;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 204, 136, 0.3);
         }
 
-        .submit-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 255, 163, 0.3);
+        .connect-main:hover:not(:disabled) {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 204, 136, 0.5);
         }
 
-        .submit-btn:disabled {
-            opacity: 0.6;
+        .connect-main:disabled {
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
-        .airdrop-timer {
-            display: flex;
-            justify-content: center;
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin-top: 2rem;
-            flex-wrap: wrap;
+            margin: 2.5rem 0;
         }
 
-        .timer-box {
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 1.5rem;
             text-align: center;
-            background: rgba(0, 243, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            min-width: 80px;
+            border: 2px solid var(--cry-blue);
+            transition: transform 0.3s;
         }
 
-        .timer-value {
-            font-family: 'Oxanium', monospace;
-            font-size: 2rem;
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
             font-weight: 700;
-            color: var(--neon-blue);
+            color: var(--tear-yellow);
+            margin-bottom: 0.5rem;
         }
 
-        .timer-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
         }
 
-        /* Sección de Tokenomics */
-        .tokenomics {
-            padding: 4rem 0;
+        /* Gamification */
+        .gamification {
+            margin: 3rem 0;
         }
 
         .section-title {
-            font-family: 'Oxanium', monospace;
-            font-size: 2.8rem;
             text-align: center;
-            margin-bottom: 3rem;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 2.2rem;
+            margin-bottom: 2rem;
+            color: var(--tear-yellow);
         }
 
-        .tokenomics-grid {
+        .levels-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
 
-        .token-card {
-            background: rgba(18, 20, 32, 0.7);
+        .level-card {
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 2rem;
-            border: 1px solid rgba(0, 243, 255, 0.1);
+            border: 3px solid;
             transition: all 0.3s;
             position: relative;
             overflow: hidden;
         }
 
-        .token-card:hover {
+        .level-card:hover {
             transform: translateY(-10px);
-            border-color: var(--neon-blue);
-            box-shadow: 0 15px 30px rgba(0, 243, 255, 0.1);
+            box-shadow: var(--shadow-glow);
         }
 
-        .token-card::before {
-            content: '';
+        .level-card.novato {
+            border-color: var(--cry-blue);
+        }
+
+        .level-card.pro {
+            border-color: var(--therapy-green);
+        }
+
+        .level-card.therapist {
+            border-color: var(--regret-purple);
+        }
+
+        .level-badge {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: var(--gradient-main);
+            top: 15px;
+            right: 15px;
+            background: var(--tear-yellow);
+            color: black;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
         }
 
-        .token-icon {
+        .level-emoji {
             font-size: 2.5rem;
             margin-bottom: 1rem;
         }
 
-        .token-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+        .level-reward {
+            background: rgba(255, 209, 102, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--tear-yellow);
         }
 
-        .token-card p {
-            color: var(--text-secondary);
-            line-height: 1.6;
+        /* Daily Wheel */
+        .daily-wheel {
+            text-align: center;
+            margin: 3rem 0;
+            padding: 2.5rem;
+            background: rgba(26, 26, 46, 0.7);
+            border-radius: 25px;
+            border: 3px solid var(--regret-purple);
+        }
+
+        .wheel-container {
+            width: 280px;
+            height: 280px;
+            margin: 2rem auto;
+            position: relative;
+            background: conic-gradient(
+                var(--cry-blue) 0deg 60deg,
+                var(--therapy-green) 60deg 120deg,
+                var(--tear-yellow) 120deg 180deg,
+                var(--regret-purple) 180deg 240deg,
+                var(--error-red) 240deg 300deg,
+                #4ECDC4 300deg 360deg
+            );
+            border-radius: 50%;
+            border: 8px solid var(--tear-yellow);
+            box-shadow: var(--shadow-glow);
+            transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1);
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3rem;
+            color: var(--tear-yellow);
+            filter: drop-shadow(0 0 10px rgba(255, 209, 102, 0.8));
+            z-index: 2;
+        }
+
+        .spin-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: none;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 3;
+            transition: all 0.3s;
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: translate(-50%, -50%) scale(1.1);
+            background: var(--therapy-green);
+            color: white;
+        }
+
+        .spin-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         /* Footer */
         footer {
-            padding: 4rem 0 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            margin-top: 4rem;
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 3rem;
-            margin-bottom: 3rem;
-        }
-
-        .footer-logo {
-            font-family: 'Oxanium', monospace;
-            font-size: 2rem;
-            font-weight: 800;
-            background: var(--gradient-main);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .social-link {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            transition: all 0.3s;
-            text-decoration: none;
-        }
-
-        .social-link:hover {
-            background: var(--gradient-main);
-            color: white;
-            transform: translateY(-5px);
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 4rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-column h4 {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-        }
-
-        .footer-column a {
-            display: block;
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin-bottom: 0.8rem;
-            transition: all 0.3s;
-        }
-
-        .footer-column a:hover {
-            color: var(--neon-blue);
-        }
-
-        .copyright {
             text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+            padding: 3rem 0;
+            border-top: 2px dashed var(--cry-blue);
+            color: var(--text-muted);
+            margin-top: 2rem;
         }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .airdrop-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .hero h1 {
-                font-size: 3.5rem;
-            }
+        .disclaimer {
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid var(--error-red);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 800px;
+            text-align: left;
         }
 
-        @media (max-width: 768px) {
-            header {
-                flex-direction: column;
-                gap: 1.5rem;
-            }
-            
-            .nav-links {
-                gap: 1.5rem;
-            }
-            
-            .hero h1 {
-                font-size: 2.8rem;
-            }
-            
-            .stats {
-                gap: 2rem;
-            }
-            
-            .airdrop-section {
-                padding: 2rem;
-            }
-            
-            .footer-content {
-                flex-direction: column;
-            }
-        }
-
-        /* Notificaciones */
-        .notification {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--gradient-solana);
-            color: #0a0b0f;
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
+        .disclaimer h4 {
+            color: var(--error-red);
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .airdrop-section {
+                padding: 1.5rem;
+            }
+            
+            .airdrop-title {
+                font-size: 1.8rem;
+            }
+            
+            .connect-main {
+                padding: 15px 25px;
+                font-size: 1.1rem;
+            }
+            
+            .levels-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .wheel-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .wallet-status {
+                margin-left: 0;
+                justify-content: center;
+            }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 15px;
+            height: 15px;
+            background-color: var(--tear-yellow);
+            top: -10px;
+            opacity: 0;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        @keyframes confettiRain {
+            0% {
+                opacity: 1;
+                top: -10px;
+                transform: rotate(0deg) translateX(0);
+            }
+            100% {
+                opacity: 0;
+                top: 100vh;
+                transform: rotate(720deg) translateX(100px);
+            }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, var(--therapy-green), var(--cry-blue));
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-weight: 600;
+            z-index: 10000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             transform: translateX(150%);
-            transition: transform 0.5s;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 350px;
         }
 
         .notification.show {
             transform: translateX(0);
         }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--therapy-green);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <!-- Efectos de fondo -->
-    <div class="bg-grid"></div>
-    <div class="floating-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
+    <!-- Confetti Container -->
+    <div id="confettiContainer"></div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notificationText"></span>
     </div>
 
-    <!-- Contenedor principal -->
     <div class="container">
         <!-- Header -->
         <header>
-            <div class="logo-container">
+            <a href="#" class="logo">
                 <div class="logo-emoji">😭</div>
                 <div class="logo-text">$REGRET</div>
+            </a>
+            
+            <div class="social-links">
+                <a href="https://x.com/RegretCoinSol2" target="_blank" class="social-btn">
+                    <i class="fab fa-twitter"></i>
+                    X
+                </a>
+                <a href="https://t.me/REGRETCOINSOL2" target="_blank" class="social-btn">
+                    <i class="fab fa-telegram"></i>
+                    Telegram
+                </a>
             </div>
-            
-            <nav class="nav-links">
-                <a href="#about" class="nav-link">About</a>
-                <a href="#airdrop" class="nav-link">Airdrop</a>
-                <a href="#tokenomics" class="nav-link">Tokenomics</a>
-                <a href="#community" class="nav-link">Community</a>
-            </nav>
-            
-            <button class="connect-btn" id="connectWalletBtn">
-                <i class="fas fa-wallet"></i>
-                <span>Connect Wallet</span>
-            </button>
+
+            <!-- Wallet Status (hidden by default) -->
+            <div id="walletStatus" class="wallet-status" style="display: none;">
+                <i class="fas fa-wallet" style="color: var(--therapy-green);"></i>
+                <span class="wallet-address" id="walletAddress"></span>
+                <button class="disconnect-btn" id="disconnectBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
         </header>
 
         <!-- Hero Section -->
         <section class="hero">
-            <h1>THE MEMECOIN FOR CRYPTO REGRETS</h1>
-            <p>We've all made mistakes. Sold too early, bought too late, trusted the wrong "trust me bro". $REGRET turns our collective pain into memes and therapy on Solana.</p>
+            <h1 class="hero-title">
+                Convierte tus errores de crypto<br>
+                en <span class="highlight">ganancias reales</span>.
+            </h1>
             
-            <div class="stats">
-                <div class="stat-box">
-                    <div class="stat-number" id="totalHolders">1,247</div>
-                    <div class="stat-label">Regretful Holders</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number" id="totalAirdrop">50,000</div>
-                    <div class="stat-label">Airdrop Participants</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number" id="marketCap">$2.1M</div>
-                    <div class="stat-label">Therapeutic Market Cap</div>
-                </div>
-            </div>
-            
-            <a href="#airdrop" class="connect-btn" style="font-size: 1.2rem; padding: 18px 40px;">
-                <i class="fas fa-gift"></i>
-                CLAIM AIRDROP
-            </a>
+            <p class="hero-subtitle">
+                $REGRET es el primer token de terapia grupal en Solana. Conecta tu wallet, reclama tu airdrop inicial,
+                y comienza a ganar tokens por compartir tu experiencia. Sin complicaciones.
+            </p>
         </section>
 
-        <!-- Sección de Airdrop -->
-        <section class="airdrop-section" id="airdrop">
-            <h2 class="airdrop-title"><i class="fas fa-parachute-box"></i> $REGRET Airdrop</h2>
-            <p class="airdrop-subtitle">Register your wallet to receive free $REGRET tokens. First 10,000 participants get bonus tokens!</p>
-            
-            <div class="airdrop-container">
-                <div class="airdrop-visual">
-                    <div class="token-animation">
-                        <div class="token-core">😭</div>
-                        <div class="orbiting-token token-1">💰</div>
-                        <div class="orbiting-token token-2">🎁</div>
-                        <div class="orbiting-token token-3">🪙</div>
-                    </div>
-                    <p style="margin-top: 2rem; color: var(--text-secondary);">Tokens distributing in orbit... coming to your wallet soon!</p>
+        <!-- Airdrop Section -->
+        <section class="airdrop-section">
+            <h2 class="airdrop-title">🎁 AIRDROP DE BIENVENIDA</h2>
+            <p class="airdrop-subtitle">
+                <strong>1,000 $REGRET GRATIS</strong> por conectar tu wallet.<br>
+                <strong>+500 $REGRET</strong> por cada amigo que invites.<br>
+                <strong>+Tokens diarios</strong> con la ruleta de la fortuna.
+            </p>
+
+            <!-- Wallet Selection -->
+            <div id="walletSelector" class="wallet-options">
+                <div class="wallet-option" data-wallet="phantom">
+                    <div class="wallet-icon"><i class="fas fa-ghost"></i></div>
+                    <div class="wallet-name">Phantom</div>
                 </div>
-                
-                <div class="airdrop-form">
-                    <h3 class="form-title"><i class="fas fa-wallet"></i> Register for Airdrop</h3>
-                    
-                    <div id="walletInfo" style="display: none;">
-                        <div class="wallet-connected">
-                            <div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Wallet Connected</div>
-                                <div class="wallet-address" id="connectedAddress">8FH...XyZ9</div>
-                            </div>
-                            <button class="disconnect-btn" id="disconnectWalletBtn">Disconnect</button>
-                        </div>
-                    </div>
-                    
-                    <div id="walletConnectPrompt">
-                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Connect your Solana wallet to register for the airdrop.</p>
-                        <button class="connect-btn" id="connectAirdropBtn" style="width: 100%; justify-content: center;">
-                            <i class="fas fa-plug"></i>
-                            Connect Wallet
-                        </button>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 2rem;">
-                        <label class="form-label">Email (optional - for updates)</label>
-                        <input type="email" class="form-input" id="userEmail" placeholder="your.email@example.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Share your biggest crypto regret (optional)</label>
-                        <textarea class="form-input" id="userRegret" placeholder="I sold 100 Bitcoin for a pizza in 2012..." rows="3"></textarea>
-                    </div>
-                    
-                    <button class="submit-btn" id="submitAirdropBtn" disabled>
-                        <i class="fas fa-paper-plane"></i>
-                        REGISTER FOR AIRDROP
-                    </button>
-                    
-                    <p style="text-align: center; margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-                        <i class="fas fa-shield-alt"></i> Your data is secure. We'll never ask for your private keys.
-                    </p>
+                <div class="wallet-option" data-wallet="solflare">
+                    <div class="wallet-icon"><i class="fas fa-sun"></i></div>
+                    <div class="wallet-name">Solflare</div>
+                </div>
+                <div class="wallet-option" data-wallet="backpack">
+                    <div class="wallet-icon"><i class="fas fa-backpack"></i></div>
+                    <div class="wallet-name">Backpack</div>
+                </div>
+                <div class="wallet-option" data-wallet="sollet">
+                    <div class="wallet-icon"><i class="fas fa-wallet"></i></div>
+                    <div class="wallet-name">Sollet</div>
                 </div>
             </div>
-            
-            <div class="airdrop-timer">
-                <div class="timer-box">
-                    <div class="timer-value" id="days">14</div>
-                    <div class="timer-label">Days</div>
+
+            <div class="airdrop-note">
+                <h4><i class="fas fa-info-circle"></i> IMPORTANTE: Token en preparación</h4>
+                <p>El token $REGRET se lanzará en Solana próximamente. Todas las wallets conectadas recibirán automáticamente sus tokens cuando se lance. Guardaremos tu dirección de forma segura para la distribución.</p>
+            </div>
+
+            <!-- Main Connect Button -->
+            <button class="connect-main" id="connectBtn">
+                <i class="fas fa-plug"></i>
+                CONECTAR WALLET Y RECLAMAR 1,000 $REGRET
+            </button>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalParticipants">2,847</div>
+                    <div class="stat-label">Wallets Registradas</div>
                 </div>
-                <div class="timer-box">
-                    <div class="timer-value" id="hours">08</div>
-                    <div class="timer-label">Hours</div>
+                <div class="stat-card">
+                    <div class="stat-number" id="tokensReserved">4.2M</div>
+                    <div class="stat-label">Tokens Reservados</div>
                 </div>
-                <div class="timer-box">
-                    <div class="timer-value" id="minutes">42</div>
-                    <div class="timer-label">Minutes</div>
-                </div>
-                <div class="timer-box">
-                    <div class="timer-value" id="seconds">15</div>
-                    <div class="timer-label">Seconds</div>
+                <div class="stat-card">
+                    <div class="stat-number" id="daysToLaunch">14</div>
+                    <div class="stat-label">Días para Lanzamiento</div>
                 </div>
             </div>
         </section>
 
-        <!-- Sección de Tokenomics -->
-        <section class="tokenomics" id="tokenomics">
-            <h2 class="section-title">Tokenomics & Therapy</h2>
+        <!-- Gamification -->
+        <section class="gamification">
+            <h2 class="section-title">🏆 Sube de Nivel, Gana Más</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1rem; font-size: 1.1rem;">
+                Tu nivel determina cuántos tokens recibirás al lanzamiento
+            </p>
             
-            <div class="tokenomics-grid">
-                <div class="token-card">
-                    <div class="token-icon">🔥</div>
-                    <h3>Burned Liquidity</h3>
-                    <p>100% of initial liquidity burned forever. No rug pulls, only eternal regret.</p>
+            <div class="levels-grid">
+                <div class="level-card novato">
+                    <div class="level-badge">NIVEL 1</div>
+                    <div class="level-emoji">😥</div>
+                    <h3>Regret Novato</h3>
+                    <p style="color: var(--text-muted); margin: 1rem 0;">Solo conectaste wallet. Todos empezamos aquí.</p>
+                    <div class="level-reward">
+                        <strong>Recompensa al lanzamiento:</strong><br>
+                        <span style="color: var(--tear-yellow); font-size: 1.2rem;">1,000 $REGRET</span>
+                    </div>
                 </div>
                 
-                <div class="token-card">
-                    <div class="token-icon">🔄</div>
-                    <h3>0% Taxes</h3>
-                    <p>No buy/sell taxes. Your regret should be emotional, not financial.</p>
+                <div class="level-card pro">
+                    <div class="level-badge">NIVEL 2</div>
+                    <div class="level-emoji">😭</div>
+                    <h3>Regret Pro</h3>
+                    <p style="color: var(--text-muted); margin: 1rem 0;">Gira la ruleta diaria + comparte tu código de referidos.</p>
+                    <div class="level-reward">
+                        <strong>Recompensa al lanzamiento:</strong><br>
+                        <span style="color: var(--therapy-green); font-size: 1.2rem;">5,000 - 15,000 $REGRET</span>
+                    </div>
                 </div>
                 
-                <div class="token-card">
-                    <div class="token-icon">🔐</div>
-                    <h3>Renounced Contract</h3>
-                    <p>Contract ownership renounced. The regret is now truly decentralized.</p>
-                </div>
-                
-                <div class="token-card">
-                    <div class="token-icon">🎁</div>
-                    <h3>Airdrop Distribution</h3>
-                    <p>40% of supply allocated to airdrops for the most regretful among us.</p>
+                <div class="level-card therapist">
+                    <div class="level-badge">NIVEL 3</div>
+                    <div class="level-emoji">🤧</div>
+                    <h3>Regret Therapist</h3>
+                    <p style="color: var(--text-muted); margin: 1rem 0;">Trae 5+ amigos y ayuda a crecer la comunidad.</p>
+                    <div class="level-reward">
+                        <strong>Recompensa al lanzamiento:</strong><br>
+                        <span style="color: var(--regret-purple); font-size: 1.2rem;">15,000 - 50,000 $REGRET</span>
+                    </div>
                 </div>
             </div>
         </section>
+
+        <!-- Daily Wheel -->
+        <section class="daily-wheel">
+            <h2 class="section-title">🎡 Ruleta de Tokens Diaria</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Gira una vez cada 24 horas. Todos ganan tokens que serán distribuidos al lanzamiento.
+            </p>
+            
+            <div class="wheel-container" id="wheel">
+                <div class="wheel-pointer">⬇️</div>
+                <button class="spin-button" id="spinBtn">GIRAR</button>
+            </div>
+            
+            <div id="wheelResult" style="margin-top: 2rem; min-height: 60px;">
+                <p style="color: var(--text-muted);">
+                    <i class="fas fa-info-circle"></i> Conecta tu wallet para girar la ruleta
+                </p>
+            </div>
+        </section>
+
+        <!-- Referral Section -->
+        <div id="referralSection" style="display: none; text-align: center; margin: 3rem 0; padding: 2rem; background: rgba(255, 209, 102, 0.1); border-radius: 20px; border: 2px dashed var(--tear-yellow);">
+            <h3 style="color: var(--tear-yellow); margin-bottom: 1rem;">
+                <i class="fas fa-user-friends"></i> Invita Amigos, Gana Más
+            </h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                Comparte tu código y gana <strong>500 $REGRET</strong> por cada amigo que se registre
+            </p>
+            <div style="
+                background: rgba(0,0,0,0.3);
+                padding: 1rem;
+                border-radius: 10px;
+                font-family: monospace;
+                font-size: 1.2rem;
+                letter-spacing: 2px;
+                margin-bottom: 1.5rem;
+                border: 2px solid var(--therapy-green);
+                display: inline-block;
+            ">
+                <span id="referralCode">REGRET-XXXX-XXXX</span>
+                <button id="copyReferralBtn" style="
+                    background: transparent;
+                    border: none;
+                    color: var(--therapy-green);
+                    cursor: pointer;
+                    margin-left: 10px;
+                ">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                <i class="fas fa-users"></i> <span id="referralCount">0</span> amigos invitados
+            </p>
+        </div>
 
         <!-- Footer -->
-        <footer id="community">
-            <div class="footer-content">
-                <div>
-                    <div class="footer-logo">$REGRET</div>
-                    <p style="color: var(--text-secondary); max-width: 300px; margin-bottom: 1.5rem;">The therapeutic memecoin for crypto's biggest regrets. No utility, just shared pain.</p>
-                    <div class="social-links">
-                        <a href="https://x.com/RegretCoinSol2" target="_blank" class="social-link">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="https://t.me/REGRETCOINSOL2" target="_blank" class="social-link">
-                            <i class="fab fa-telegram"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <i class="fab fa-discord"></i>
-                        </a>
-                        <a href="#" class="social-link">
-                            <i class="fab fa-reddit"></i>
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="footer-links">
-                    <div class="footer-column">
-                        <h4>Token</h4>
-                        <a href="#">Chart</a>
-                        <a href="#">Buy $REGRET</a>
-                        <a href="#">Contract</a>
-                        <a href="#">DexScreener</a>
-                    </div>
-                    
-                    <div class="footer-column">
-                        <h4>Community</h4>
-                        <a href="#">Regret Stories</a>
-                        <a href="#">Memes Gallery</a>
-                        <a href="#">Airdrop FAQ</a>
-                        <a href="#">Support Group</a>
-                    </div>
-                    
-                    <div class="footer-column">
-                        <h4>Resources</h4>
-                        <a href="#">How to Buy</a>
-                        <a href="#">Whitepaper</a>
-                        <a href="#">Audit</a>
-                        <a href="#">Brand Assets</a>
-                    </div>
-                </div>
+        <footer>
+            <div class="disclaimer">
+                <h4><i class="fas fa-exclamation-triangle"></i> INFORMACIÓN IMPORTANTE</h4>
+                <p><strong>$REGRET es un token meme en fase de preparación.</strong> El airdrop registra tu wallet para recibir tokens cuando se lance el token en Solana. No es una inversión. Los tokens no tienen valor garantizado. Solo participa si comprendes los riesgos de los memecoins.</p>
+                <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                    <i class="fas fa-database"></i> Tus datos de wallet se almacenan de forma segura únicamente para la distribución futura de tokens.
+                </p>
             </div>
             
-            <div class="copyright">
-                <p>$REGRET is a meme token with no intrinsic value. This is not financial advice. You will probably lose money. Embrace the regret.</p>
-                <p style="margin-top: 1rem;">© 2024 $REGRET Memecoin. All regrets reserved.</p>
-            </div>
+            <p style="margin-top: 2rem;">
+                😭 $REGRET - Terapia Crypto que Paga<br>
+                <span style="color: var(--text-muted); font-size: 0.9rem;">
+                    © 2024 | Próximo lanzamiento en Solana
+                </span>
+            </p>
         </footer>
     </div>
 
-    <!-- Notificación -->
-    <div class="notification" id="notification">
-        <i class="fas fa-check-circle"></i>
-        <span id="notificationText">Airdrop registration successful!</span>
-    </div>
-
     <script>
-        // Estado de la aplicación
-        const appState = {
-            walletConnected: false,
-            walletAddress: null,
-            airdropRegistered: false,
-            participants: 50247
-        };
-
-        // Elementos DOM
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        const connectAirdropBtn = document.getElementById('connectAirdropBtn');
-        const disconnectWalletBtn = document.getElementById('disconnectWalletBtn');
-        const submitAirdropBtn = document.getElementById('submitAirdropBtn');
-        const walletInfo = document.getElementById('walletInfo');
-        const walletConnectPrompt = document.getElementById('walletConnectPrompt');
-        const notification = document.getElementById('notification');
-        const notificationText = document.getElementById('notificationText');
-        const totalAirdropEl = document.getElementById('totalAirdrop');
-        const userEmail = document.getElementById('userEmail');
-        const userRegret = document.getElementById('userRegret');
-
-        // Simular conexión de wallet
-        function connectWallet() {
-            // En un entorno real, aquí integrarías Phantom, Solflare, etc.
-            // Por ahora simulamos una conexión exitosa
-            appState.walletConnected = true;
-            appState.walletAddress = generateFakeSolanaAddress();
-            
-            // Actualizar UI
-            connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> ' + shortenAddress(appState.walletAddress);
-            connectWalletBtn.style.background = 'var(--gradient-solana)';
-            
-            // Mostrar info de wallet en el formulario de airdrop
-            walletInfo.style.display = 'block';
-            walletConnectPrompt.style.display = 'none';
-            document.getElementById('connectedAddress').textContent = shortenAddress(appState.walletAddress);
-            
-            // Habilitar botón de submit
-            submitAirdropBtn.disabled = false;
-            
-            // Mostrar notificación
-            showNotification('Wallet connected successfully!');
-            
-            // Incrementar contador de participantes
-            updateParticipantCount();
-        }
-
-        // Desconectar wallet
-        function disconnectWallet() {
-            appState.walletConnected = false;
-            appState.walletAddress = null;
-            
-            // Restaurar UI
-            connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> <span>Connect Wallet</span>';
-            connectWalletBtn.style.background = 'var(--gradient-main)';
-            
-            // Ocultar info de wallet en el formulario
-            walletInfo.style.display = 'none';
-            walletConnectPrompt.style.display = 'block';
-            
-            // Deshabilitar botón de submit
-            submitAirdropBtn.disabled = true;
-            
-            showNotification('Wallet disconnected.');
-        }
-
-        // Registrar para airdrop
-        function registerForAirdrop() {
-            if (!appState.walletConnected) {
-                showNotification('Please connect your wallet first!');
-                return;
-            }
-            
-            const email = userEmail.value;
-            const regret = userRegret.value;
-            
-            // Simular envío a servidor
-            setTimeout(() => {
-                appState.airdropRegistered = true;
-                appState.participants += 1;
-                
-                // Actualizar contador
-                totalAirdropEl.textContent = appState.participants.toLocaleString();
-                
-                // Mostrar confirmación
-                submitAirdropBtn.innerHTML = '<i class="fas fa-check"></i> REGISTERED!';
-                submitAirdropBtn.style.background = 'var(--solana-green)';
-                submitAirdropBtn.disabled = true;
-                
-                // Mostrar notificación con efecto especial
-                showNotification(`Airdrop registered! You'll receive $REGRET soon. ${regret ? 'We feel your pain.' : ''}`);
-                
-                // Limpiar formulario
-                userEmail.value = '';
-                userRegret.value = '';
-                
-                // Simular actualización en tiempo real de otros contadores
-                updateLiveStats();
-            }, 1500);
-        }
-
-        // Mostrar notificación
-        function showNotification(message) {
-            notificationText.textContent = message;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
-        }
-
-        // Generar dirección Solana falsa (para simulación)
-        function generateFakeSolanaAddress() {
-            const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-            let address = '';
-            for (let i = 0; i < 44; i++) {
-                address += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return address;
-        }
-
-        // Acortar dirección para mostrar
-        function shortenAddress(address) {
-            return address.substring(0, 6) + '...' + address.substring(address.length - 6);
-        }
-
-        // Actualizar contador de participantes
-        function updateParticipantCount() {
-            // Incrementar aleatoriamente para simular actividad
-            const increment = Math.floor(Math.random() * 10) + 1;
-            appState.participants += increment;
-            totalAirdropEl.textContent = appState.participants.toLocaleString();
-        }
-
-        // Actualizar stats en vivo
-        function updateLiveStats() {
-            const holdersEl = document.getElementById('totalHolders');
-            const marketCapEl = document.getElementById('marketCap');
-            
-            // Incrementar holders ligeramente
-            let holders = parseInt(holdersEl.textContent.replace(/,/g, ''));
-            holders += Math.floor(Math.random() * 5) + 1;
-            holdersEl.textContent = holders.toLocaleString();
-            
-            // Incrementar market cap ligeramente
-            let marketCap = marketCapEl.textContent;
-            let value = parseFloat(marketCap.substring(1));
-            value += (Math.random() * 0.1);
-            marketCapEl.textContent = '$' + value.toFixed(1) + 'M';
-        }
-
-        // Temporizador de cuenta regresiva
-        function updateCountdown() {
-            // Fecha objetivo: 7 días desde ahora
-            const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + 7);
-            
-            function update() {
-                const now = new Date().getTime();
-                const distance = targetDate - now;
-                
-                // Cálculos para días, horas, minutos, segundos
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                
-                // Mostrar resultados
-                document.getElementById('days').textContent = days.toString().padStart(2, '0');
-                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-                
-                // Si la cuenta regresiva termina
-                if (distance < 0) {
-                    clearInterval(countdownInterval);
-                    document.querySelector('.airdrop-timer').innerHTML = '<div style="color: var(--solana-green); font-size: 1.5rem; font-weight: bold;">Airdrop distribution started!</div>';
-                }
-            }
-            
-            // Actualizar cada segundo
-            update();
-            const countdownInterval = setInterval(update, 1000);
-        }
-
-        // Event Listeners
-        connectWalletBtn.addEventListener('click', connectWallet);
-        connectAirdropBtn.addEventListener('click', connectWallet);
-        disconnectWalletBtn.addEventListener('click', disconnectWallet);
-        submitAirdropBtn.addEventListener('click', registerForAirdrop);
-
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCountdown();
-            
-            // Simular actividad inicial
-            setInterval(() => {
-                if (Math.random() > 0.7) {
-                    updateParticipantCount();
-                }
-            }, 5000);
-            
-            // Actualizar stats en vivo periódicamente
-            setInterval(updateLiveStats, 10000);
-            
-            // Efecto de tecleo en el hero
-            const heroTitle = document.querySelector('.hero h1');
-            const originalText = heroTitle.textContent;
-            heroTitle.textContent = '';
-            let i = 0;
-            const typeWriter = setInterval(() => {
-                if (i < originalText.length) {
-                    heroTitle.textContent += originalText.charAt(i);
-                    i++;
-                } else {
-                    clearInterval(typeWriter);
-                }
-            }, 50);
-        });
-
-        // Validación de email en tiempo real
-        userEmail.addEventListener('input', function() {
-            const email = this.value;
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                this.style.borderColor = '#ff4757';
-            } else {
-                this.style.borderColor = 'rgba(0, 243, 255, 0.2)';
-            }
-        });
-    </script>
-</body>
-</html>
+        // ============================================
+        // CONFIGURACIÓN Y ESTADO
+        // ============================================
+        const CONFIG = {
+            AIRDROP_BASE: 1000,
+            REFERRAL_BONUS: 500,
+            WHEEL_PRIZES: [100, 250, 500, 1000, 1500, 2000],
+            COLLECTION_ENDPOINT: "https://script.google.com/macros/s/AKfycbx8xK6q9hXZP9Q6J7qJ5XqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9ZqX9Z
