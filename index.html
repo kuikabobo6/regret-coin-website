@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$REGRET - The Crypto Regret Token</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😭</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa8a8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tagline {
+            font-size: 1.5rem;
+            color: #a0a0c0;
+            margin-bottom: 30px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 40px;
+            padding: 40px 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .card p {
+            color: #c0c0e0;
+            margin-bottom: 15px;
+        }
+        
+        .features {
+            list-style: none;
+        }
+        
+        .features li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #a0a0c0;
+        }
+        
+        .features li:before {
+            content: "😭";
+            margin-right: 10px;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 40px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-twitter {
+            background: linear-gradient(45deg, #1DA1F2, #1a91da);
+        }
+        
+        .btn-telegram {
+            background: linear-gradient(45deg, #0088cc, #0077b5);
+        }
+        
+        .btn-solana {
+            background: linear-gradient(45deg, #00ffa3, #00cc82);
+        }
+        
+        .contract-address {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+        
+        .disclaimer {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 40px;
+            font-size: 0.9rem;
+        }
+        
+        .disclaimer h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        .countdown {
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 20px 0;
+            color: #ffa8a8;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">😭</div>
+            <h1>$REGRET</h1>
+            <p class="tagline">The Therapy Token for Crypto Mistakes</p>
+            <div class="countdown" id="countdown">
+                Coming soon to Solana...
+            </div>
+            <div class="social-links">
+                <a href="https://twitter.com/RegretCoinSol" target="_blank" class="btn btn-twitter">Follow on X</a>
+                <a href="#" id="telegramLink" class="btn btn-telegram">Join Telegram</a>
+                <a href="#" id="buyLink" class="btn btn-solana">Buy on Pump.fun</a>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="card">
+                <h2>What is $REGRET?</h2>
+                <p>$REGRET is a meme token born from our collective crypto failures. It's for everyone who:</p>
+                <ul class="features">
+                    <li>Sold Bitcoin too early</li>
+                    <li>Bought the top, sold the bottom</li>
+                    <li>Missed out on moonshots</li>
+                    <li>Believed in "trust me bro" advice</li>
+                    <li>Lost funds in exchanges</li>
+                </ul>
+                <p>This token has no utility. No roadmap. Just shared trauma and memes.</p>
+            </div>
+            
+            <div class="card">
+                <h2>Token Details</h2>
+                <p><strong>Network:</strong> Solana</p>
+                <p><strong>Supply:</strong> 1,000,000,000</p>
+                <p><strong>Taxes:</strong> 0%</p>
+                <p><strong>Liquidity:</strong> Burned 🔥</p>
+                <p><strong>Contract:</strong> Renounced 📜</p>
+                
+                <div id="contractSection" style="display: none;">
+                    <h3>Contract Address:</h3>
+                    <div class="contract-address" id="contractAddress">
+                        [CONTRACT_ADDRESS_WILL_BE_HERE]
+                    </div>
+                    <button onclick="copyContract()" class="btn">Copy Address</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Share Your Story</h2>
+                <p>We're collecting the best crypto regret stories. Share yours and you might get featured!</p>
+                <textarea id="regretStory" placeholder="My worst crypto mistake was..." rows="4" style="width: 100%; padding: 10px; border-radius: 5px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 15px;"></textarea>
+                <button onclick="submitStory()" class="btn">Submit Story</button>
+                <p id="storyResponse" style="margin-top: 15px; color: #a0a0c0;"></p>
+            </div>
+            
+            <div class="card">
+                <h2>Community</h2>
+                <p>Join our support group of regretful traders:</p>
+                <ul class="features">
+                    <li>Daily regret memes</li>
+                    <li>Anonymous confession space</li>
+                    <li>Regret levels ranking</li>
+                    <li>Weekly airdrops (when launched)</li>
+                </ul>
+                <p>Follow our journey from regret to... probably more regret.</p>
+            </div>
+        </main>
+        
+        <div class="disclaimer">
+            <h3>⚠️ IMPORTANT DISCLAIMER</h3>
+            <p>$REGRET is a MEME token with NO intrinsic value. It is NOT an investment.</p>
+            <p>This is a social experiment about our crypto failures. You will likely lose money if you buy this token.</p>
+            <p>Only invest what you can afford to lose (preferably $0).</p>
+        </div>
+        
+        <footer>
+            <p>$REGRET - The Therapy Token for Crypto Regrets</p>
+            <p>© 2024 | Made with 😭 and zero expectations</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">This website is 100% static, costs $0 to host</p>
+        </footer>
+    </div>
+
+    <script>
+        // Countdown timer (adjust date as needed)
+        function updateCountdown() {
+            const launchDate = new Date('2024-04-15T00:00:00').getTime();
+            const now = new Date().getTime();
+            const distance = launchDate - now;
+            
+            if (distance > 0) {
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                document.getElementById('countdown').innerHTML = 
+                    `Launching in: ${days}d ${hours}h`;
+            } else {
+                document.getElementById('countdown').innerHTML = 
+                    'Launched! Check X for contract address';
+                document.getElementById('contractSection').style.display = 'block';
+            }
+        }
+        
+        // Update countdown every second
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+        
+        // Fake story submission (for now)
+        function submitStory() {
+            const story = document.getElementById('regretStory').value;
+            if (story.trim().length < 10) {
+                document.getElementById('storyResponse').innerHTML = 
+                    'Please share a real story (min 10 characters)';
+                document.getElementById('storyResponse').style.color = '#ff6b6b';
+                return;
+            }
+            
+            document.getElementById('storyResponse').innerHTML = 
+                'Thanks for sharing! If selected, we\'ll DM you on X.';
+            document.getElementById('storyResponse').style.color = '#00ffa3';
+            document.getElementById('regretStory').value = '';
+            
+            // In a real implementation, you would send this to a backend
+            console.log('Regret story:', story);
+        }
+        
+        function copyContract() {
+            const text = document.getElementById('contractAddress').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Contract address copied to clipboard!');
+            });
+        }
+        
+        // Update links when contract is available
+        document.getElementById('telegramLink').onclick = function(e) {
+            e.preventDefault();
+            alert('Telegram group will be created when we reach 100 followers on X!');
+        };
+        
+        document.getElementById('buyLink').onclick = function(e) {
+            e.preventDefault();
+            alert('Token not launched yet! Follow @RegretCoinSol for updates.');
+        };
+        
+        // Simple page load animation
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
