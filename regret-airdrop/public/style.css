@@ -827,3 +827,19 @@ footer {
     }
 }
 
+/* Indicadores de estado de wallets */
+.wallet-status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    background: var(--error-red);
+}
+
+.wallet-status-indicator.available {
+    background: var(--therapy-green);
+}
+
+.wallet-status-indicator.partial {
+    background: var(--tear-yellow);
+}
