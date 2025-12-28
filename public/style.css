@@ -245,24 +245,24 @@ header {
 .header-wallets {
     display: flex !important;
     flex-direction: row;
-    gap: 10px;
-    margin: 0.5rem 0;
+    gap: 8px;
+    margin: 0.3rem 0;
     justify-content: center;
 }
 
 .header-wallets .wallet-option {
-    padding: 0.8rem 0.5rem;
-    min-width: 80px;
-    font-size: 0.85rem;
+    padding: 0.6rem 0.4rem;
+    min-width: 70px;
+    font-size: 0.75rem;
 }
 
 .header-wallets .wallet-icon {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
 .header-wallets .wallet-name {
-    font-size: 0.8rem;
-    margin-bottom: 5px;
+    font-size: 0.7rem;
+    margin-bottom: 3px;
 }
 
 .wallet-option {

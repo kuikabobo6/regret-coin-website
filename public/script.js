@@ -7,7 +7,6 @@ function updateWalletAvailability() {
         phantom: document.getElementById('phantomStatus'),
         solflare: document.getElementById('solflareStatus'),
         backpack: document.getElementById('backpackStatus'),
-        metamask: document.getElementById('metamaskStatus'),
         uniswap: document.getElementById('uniswapStatus')
     };
     
@@ -25,12 +24,7 @@ function updateWalletAvailability() {
     if (wallets.backpack) {
         indicators.backpack.className = 'wallet-status-indicator available';
     }
-    
-    // MetaMask (solo Ethereum, necesita snap para Solana)
-    if (wallets.metamask) {
-        indicators.metamask.className = 'wallet-status-indicator partial';
-    }
-    
+
     // Uniswap (siempre disponible vía manual)
     indicators.uniswap.className = 'wallet-status-indicator partial';
     
