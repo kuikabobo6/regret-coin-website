@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Wallets - $REGRET</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .wallet-test {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .wallet-btn {
+            background: #4A90E2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .wallet-btn:hover {
+            background: #357ABD;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+        }
+        .success {
+            background: #e6ffe6;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test de Conexión de Wallets</h1>
+    <p>Abre la consola del navegador (F12) para ver los logs detallados.</p>
+
+    <div class="wallet-test">
+        <h3>Phantom</h3>
+        <button class="wallet-btn" onclick="testWallet('phantom')">Test Phantom</button>
+        <div id="phantom-result" class="result"></div>
+    </div>
+
+    <div class="wallet-test">
+        <h3>Solflare</h3>
+        <button class="wallet-btn" onclick="testWallet('solflare')">Test Solflare</button>
+        <div id="solflare-result" class="result"></div>
+    </div>
+
+    <div class="wallet-test">
+        <h3>Backpack</h3>
+        <button class="wallet-btn" onclick="testWallet('backpack')">Test Backpack</button>
+        <div id="backpack-result" class="result"></div>
+    </div>
+
+    <div class="wallet-test">
+        <h3>Uniswap (Manual)</h3>
+        <button class="wallet-btn" onclick="testWallet('uniswap')">Test Uniswap</button>
+        <div id="uniswap-result" class="result"></div>
+    </div>
+
+    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+    <script>
+// Función de logging para mostrar en UI
+function logToUI(walletType, message, type = 'info') {
+    const resultDiv = document.getElementById(`${walletType}-result`);
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}\n`;
+
+    resultDiv.textContent += logEntry;
+    resultDiv.className = `result ${type}`;
+    resultDiv.scrollTop = resultDiv.scrollHeight;
+
+    console.log(`[${walletType.toUpperCase()}] ${message}`);
+}
+
+// Conectar wallet - Versión con debugging detallado
+async function testWallet(walletType) {
+    const resultDiv = document.getElementById(`${walletType}-result`);
+    resultDiv.textContent = '';
+    resultDiv.className = 'result';
+
+    logToUI(walletType, `🔍 Intentando conectar ${walletType}...`);
+
+    try {
+        let publicKey = null;
+
+        switch(walletType) {
+            case 'phantom':
+                logToUI(walletType, '🔍 Verificando Phantom...');
+                logToUI(walletType, `window.solana: ${!!window.solana}`);
+                logToUI(walletType, `window.solana.isPhantom: ${!!window.solana?.isPhantom}`);
+
+                if (window.solana && window.solana.isPhantom) {
+                    logToUI(walletType, '✅ Phantom detectada, conectando...');
+                    const response = await window.solana.connect();
+                    logToUI(walletType, `📄 Respuesta de Phantom: ${JSON.stringify(response, null, 2)}`);
+                    logToUI(walletType, `📄 Tipo de respuesta: ${typeof response}`);
+
+                    if (response && response.publicKey) {
+                        publicKey = response.publicKey.toString();
+                        logToUI(walletType, `✅ PublicKey extraída: ${publicKey}`, 'success');
+                    } else if (response && typeof response === 'string') {
+                        publicKey = response;
+                        logToUI(walletType, `✅ Respuesta como string: ${publicKey}`, 'success');
+                    } else if (response && typeof response === 'object') {
+                        logToUI(walletType, `📄 Propiedades del objeto: ${Object.keys(response).join(', ')}`);
+                        publicKey = response.publicKey || response.address || response.toString();
+                        logToUI(walletType, `✅ PublicKey de objeto: ${publicKey}`, 'success');
+                    } else {
+                        logToUI(walletType, `❌ Respuesta inválida: ${response}`, 'error');
+                        throw new Error('Respuesta inválida de Phantom');
+                    }
+                } else {
+                    logToUI(walletType, '❌ Phantom no detectada', 'error');
+                    throw new Error('Phantom no detectada. Instala la extensión de Phantom.');
+                }
+                break;
+
+            case 'solflare':
+                logToUI(walletType, '🔍 Verificando Solflare...');
+                logToUI(walletType, `window.solflare: ${!!window.solflare}`);
+
+                if (window.solflare) {
+                    logToUI(walletType, '✅ Solflare detectada, conectando...');
+                    const response = await window.solflare.connect();
+                    logToUI(walletType, `📄 Respuesta de Solflare: ${JSON.stringify(response, null, 2)}`);
+                    logToUI(walletType, `📄 Tipo de respuesta: ${typeof response}`);
+
+                    if (response && response.publicKey) {
+                        publicKey = response.publicKey.toString();
+                        logToUI(walletType, `✅ PublicKey extraída: ${publicKey}`, 'success');
+                    } else if (response && typeof response === 'string') {
+                        publicKey = response;
+                        logToUI(walletType, `✅ Respuesta como string: ${publicKey}`, 'success');
+                    } else {
+                        logToUI(walletType, `❌ Respuesta inválida: ${response}`, 'error');
+                        throw new Error('Respuesta inválida de Solflare');
+                    }
+                } else {
+                    logToUI(walletType, '❌ Solflare no detectada', 'error');
+                    throw new Error('Solflare no detectada. Instala la extensión de Solflare.');
+                }
+                break;
+
+            case 'backpack':
+                logToUI(walletType, '🔍 Verificando Backpack...');
+                logToUI(walletType, `window.backpack: ${!!window.backpack}`);
+
+                if (window.backpack) {
+                    logToUI(walletType, '✅ Backpack detectada, conectando...');
+                    const response = await window.backpack.connect();
+                    logToUI(walletType, `📄 Respuesta de Backpack: ${JSON.stringify(response, null, 2)}`);
+                    logToUI(walletType, `📄 Tipo de respuesta: ${typeof response}`);
+
+                    if (response && response.publicKey) {
+                        publicKey = response.publicKey.toString();
+                        logToUI(walletType, `✅ PublicKey extraída: ${publicKey}`, 'success');
+                    } else if (response && typeof response === 'string') {
+                        publicKey = response;
+                        logToUI(walletType, `✅ Respuesta como string: ${publicKey}`, 'success');
+                    } else {
+                        logToUI(walletType, `❌ Respuesta inválida: ${response}`, 'error');
+                        throw new Error('Respuesta inválida de Backpack');
+                    }
+                } else {
+                    logToUI(walletType, '❌ Backpack no detectada', 'error');
+                    throw new Error('Backpack no detectada. Instala la extensión de Backpack.');
+                }
+                break;
+
+            case 'uniswap':
+                logToUI(walletType, '🔍 Uniswap - conexión manual');
+                const address = prompt('Ingresa tu dirección de wallet Solana (44 caracteres):');
+                if (address && address.length === 44 && /^[1-9A-HJ-NP-Za-km-z]{44}$/.test(address)) {
+                    publicKey = address;
+                    logToUI(walletType, `✅ Dirección manual válida: ${publicKey}`, 'success');
+                } else {
+                    logToUI(walletType, `❌ Dirección inválida: ${address}`, 'error');
+                    throw new Error('Dirección de wallet inválida');
+                }
+                break;
+
+            default:
+                throw new Error('Tipo de wallet no soportado');
+        }
+
+        if (!publicKey) {
+            logToUI(walletType, '❌ No se pudo obtener la clave pública', 'error');
+            throw new Error('No se pudo obtener la clave pública');
+        }
+
+        logToUI(walletType, `🎉 Wallet conectada exitosamente: ${publicKey}`, 'success');
+        return publicKey;
+
+    } catch (error) {
+        logToUI(walletType, `💥 Error: ${error.message}`, 'error');
+        logToUI(walletType, `Stack: ${error.stack}`, 'error');
+        return null;
+    }
+}
+
+// Detectar wallets disponibles al cargar
+window.addEventListener('load', () => {
+    console.log('🔍 Detectando wallets disponibles...');
+    console.log('Phantom:', !!window.solana?.isPhantom);
+    console.log('Solflare:', !!window.solflare);
+    console.log('Backpack:', !!window.backpack);
+});
+    </script>
+</body>
+</html>
