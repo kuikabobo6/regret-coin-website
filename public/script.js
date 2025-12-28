@@ -37,7 +37,9 @@ function updateWalletAvailability() {
             option.title = `Instala ${walletType} para usar esta opción`;
         }
     });
-}// Configuración
+}
+
+// Configuración
 const API_BASE = '/api';
 const CONFIG = {
     AIRDROP_BASE: 1000,
