@@ -241,6 +241,30 @@ header {
     margin: 1.5rem 0;
 }
 
+/* Header Wallets - Horizontal and Smaller */
+.header-wallets {
+    display: flex !important;
+    flex-direction: row;
+    gap: 10px;
+    margin: 0.5rem 0;
+    justify-content: center;
+}
+
+.header-wallets .wallet-option {
+    padding: 0.8rem 0.5rem;
+    min-width: 80px;
+    font-size: 0.85rem;
+}
+
+.header-wallets .wallet-icon {
+    font-size: 1.5rem;
+}
+
+.header-wallets .wallet-name {
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
 .wallet-option {
     background: rgba(255, 255, 255, 0.05);
     border: 2px solid var(--cry-blue);
