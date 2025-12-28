@@ -63,6 +63,7 @@ let appState = {
 // Inicialización
 document.addEventListener('DOMContentLoaded', async () => {
     await loadStats();
+    updateWalletAvailability();
     setupEventListeners();
     checkExistingConnection();
 });
@@ -576,5 +577,6 @@ window.appState = appState;
 window.connectToWallet = connectToWallet;
 
 window.showNotification = showNotification;
+
 
 
