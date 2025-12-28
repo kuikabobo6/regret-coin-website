@@ -85,44 +85,72 @@ function updateStatsUI() {
     if (appState.stats) {
         const TOTAL_TOKENS = 10000000; // 10 millones totales
         
-        document.getElementById('totalParticipants').textContent = 
-            appState.stats.totalParticipants.toLocaleString();
-        
-        // Formatear tokens reservados
+        // Formatear números correctamente
+        const participants = appState.stats.totalParticipants;
         const tokensReserved = appState.stats.tokensReserved;
-        document.getElementById('tokensReserved').textContent = 
-            (tokensReserved / 1000).toFixed(1) + 'K';
         
-        // Calcular tokens restantes
+        // Total de participantes
+        document.getElementById('totalParticipants').textContent = 
+            participants.toLocaleString();
+        
+        // Tokens reservados (formato: 1.5M)
+        let tokensReservedFormatted;
+        if (tokensReserved >= 1000000) {
+            tokensReservedFormatted = (tokensReserved / 1000000).toFixed(1) + 'M';
+        } else if (tokensReserved >= 1000) {
+            tokensReservedFormatted = (tokensReserved / 1000).toFixed(1) + 'K';
+        } else {
+            tokensReservedFormatted = tokensReserved.toLocaleString();
+        }
+        
+        document.getElementById('tokensReserved').textContent = tokensReservedFormatted;
+        
+        // Tokens disponibles
         const tokensRemaining = TOTAL_TOKENS - tokensReserved;
-        document.getElementById('tokensRemaining').textContent = 
-            (tokensRemaining / 1000000).toFixed(1) + 'M';
+        let tokensRemainingFormatted;
+        if (tokensRemaining >= 1000000) {
+            tokensRemainingFormatted = (tokensRemaining / 1000000).toFixed(1) + 'M';
+        } else if (tokensRemaining >= 1000) {
+            tokensRemainingFormatted = (tokensRemaining / 1000).toFixed(1) + 'K';
+        } else {
+            tokensRemainingFormatted = tokensRemaining.toLocaleString();
+        }
         
-        // Actualizar texto pequeño
+        document.getElementById('tokensRemaining').textContent = tokensRemainingFormatted;
+        
+        // Texto descriptivo
         document.getElementById('tokensAvailable').textContent = 
             `de ${(TOTAL_TOKENS/1000000).toFixed(0)}M total`;
         
+        // Días para lanzamiento
         document.getElementById('daysToLaunch').textContent = 
             appState.stats.daysToLaunch;
         
-        // Barra de progreso (participantes)
-        const progressParticipants = (appState.stats.totalParticipants / 5000) * 100;
-        document.getElementById('progressFill').style.width = `${progressParticipants}%`;
-        
-        // Barra de progreso para tokens (opcional - añade en CSS si quieres)
-        const progressTokens = (tokensReserved / TOTAL_TOKENS) * 100;
+        // Barra de progreso de participantes
+        const progressParticipants = (participants / 5000) * 100;
+        const progressFill = document.getElementById('progressFill');
+        if (progressFill) {
+            progressFill.style.width = `${progressParticipants}%`;
+        }
         
         // Actualizar límites
-        const remaining = 5000 - appState.stats.totalParticipants;
-        document.getElementById('remainingSlots').textContent = 
-            `${remaining.toLocaleString()} cupos disponibles`;
+        const remainingSlots = 5000 - participants;
+        const remainingSlotsElement = document.getElementById('remainingSlots');
+        if (remainingSlotsElement) {
+            remainingSlotsElement.textContent = 
+                `${remainingSlots.toLocaleString()} cupos disponibles`;
+        }
         
-        if (progressParticipants >= 90) {
-            document.getElementById('airdropLimit').style.display = 'block';
-            const limitText = progressParticipants >= 95 ? 
-                '⚠️ ¡ÚLTIMOS CUPOS! El airdrop está por cerrarse' :
-                '⚠️ Airdrop limitado - Quedan pocos cupos';
-            document.getElementById('limitText').textContent = limitText;
+        // Mostrar advertencias
+        const airdropLimit = document.getElementById('airdropLimit');
+        if (airdropLimit) {
+            if (progressParticipants >= 90) {
+                airdropLimit.style.display = 'block';
+                const limitText = progressParticipants >= 95 ? 
+                    '⚠️ ¡ÚLTIMOS CUPOS! El airdrop está por cerrarse' :
+                    '⚠️ Airdrop limitado - Quedan pocos cupos';
+                document.getElementById('limitText').textContent = limitText;
+            }
         }
     }
 }
@@ -577,6 +605,7 @@ window.appState = appState;
 window.connectToWallet = connectToWallet;
 
 window.showNotification = showNotification;
+
 
 
 
