@@ -9,6 +9,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Script de detección de wallets -->
+    <script>
+    // Detectar wallets disponibles cuando la página cargue
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔍 Iniciando detección de wallets...');
+        
+        // Esperar un momento para que las extensiones se carguen
+        setTimeout(() => {
+            const updateIndicator = (id, isAvailable) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (isAvailable) {
+                        element.classList.add('available');
+                        element.classList.remove('unavailable');
+                    } else {
+                        element.classList.add('unavailable');
+                        element.classList.remove('available');
+                    }
+                }
+            };
+            
+            // Detectar Phantom
+            updateIndicator('phantomStatus', window.solana && window.solana.isPhantom);
+            
+            // Detectar Solflare
+            updateIndicator('solflareStatus', window.solflare && 
+                (window.solflare.isSolflare || 
+                 typeof window.solflare.connect === 'function' || 
+                 typeof window.solflare.request === 'function'));
+            
+            // Detectar Backpack
+            updateIndicator('backpackStatus', window.backpack && 
+                (window.backpack.isBackpack || 
+                 typeof window.backpack.connect === 'function' || 
+                 window.backpack.solana));
+            
+            // Uniswap siempre disponible
+            updateIndicator('uniswapStatus', true);
+            
+            console.log('✅ Detección de wallets completada');
+        }, 500);
+    });
+    </script>
 </head>
 <body>
     <!-- Confetti Container -->
@@ -312,5 +355,4 @@
     <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>

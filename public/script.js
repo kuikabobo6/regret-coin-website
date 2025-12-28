@@ -1,4 +1,3 @@
-
 // Configuración
 const API_BASE = '/api';
 const CONFIG = {
@@ -21,18 +20,17 @@ let appState = {
 // Mock API para desarrollo
 const mockAPI = {
     async getStats() {
-        // Datos más realistas para desarrollo
         const totalParticipants = Math.floor(Math.random() * 1500) + 1000;
         const tokensReserved = Math.floor(totalParticipants * 1000) + 
-                              Math.floor(totalParticipants * 0.3 * 500) + // Referidos
-                              Math.floor(totalParticipants * 2 * 500); // Ruletas diarias
+                              Math.floor(totalParticipants * 0.3 * 500) + 
+                              Math.floor(totalParticipants * 2 * 500);
         
         return {
             totalParticipants: totalParticipants,
             tokensReserved: tokensReserved,
             daysToLaunch: Math.max(1, Math.floor(Math.random() * 30) + 1),
             participantsToday: Math.floor(Math.random() * 50) + 25,
-            trend: Math.random() > 0.5 ? 'up' : 'up' // Siempre positivo para motivar
+            trend: 'up'
         };
     },
     
@@ -48,7 +46,6 @@ const mockAPI = {
     
     async spinWheel(walletAddress) {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        // Montos correspondientes a los colores
         const prizeMap = [
             { color: '#4A90E2', amount: 100 },
             { color: '#00CC88', amount: 250 },
@@ -97,11 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initializeApp() {
     try {
         await loadStats();
-        updateWalletAvailability();
         setupEventListeners();
         checkExistingConnection();
         
-        // Actualizar automáticamente cada 30 segundos en producción
         if (appState.isProduction) {
             setInterval(loadStats, 30000);
         }
@@ -111,15 +106,12 @@ async function initializeApp() {
     }
 }
 
-// Cargar estadísticas - MEJORADO para producción
+// Cargar estadísticas
 async function loadStats() {
     try {
-        console.log('Cargando estadísticas...');
-        
         let data;
         
         if (appState.isProduction) {
-            // En producción, intentar API real primero
             try {
                 const response = await fetch(`${API_BASE}/stats`, {
                     method: 'GET',
@@ -131,13 +123,10 @@ async function loadStats() {
                 
                 if (response.ok) {
                     data = await response.json();
-                    console.log('✅ Estadísticas cargadas desde API');
                 } else {
                     throw new Error(`API error: ${response.status}`);
                 }
             } catch (apiError) {
-                console.error('Error API producción:', apiError.message);
-                // En producción, usar datos por defecto si API falla
                 data = {
                     totalParticipants: 1875,
                     tokensReserved: 3875000,
@@ -147,9 +136,7 @@ async function loadStats() {
                 };
             }
         } else {
-            // En desarrollo, usar mock
             data = await mockAPI.getStats();
-            console.log('🛠️ Usando datos de desarrollo');
         }
         
         appState.stats = data;
@@ -157,7 +144,6 @@ async function loadStats() {
         
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
-        // Datos de respaldo robustos
         appState.stats = {
             totalParticipants: 1875,
             tokensReserved: 3875000,
@@ -169,7 +155,7 @@ async function loadStats() {
     }
 }
 
-// Actualizar UI de estadísticas - COMPLETAMENTE MEJORADA
+// Actualizar UI de estadísticas
 function updateStatsUI() {
     if (appState.stats) {
         const participants = appState.stats.totalParticipants || 0;
@@ -178,66 +164,38 @@ function updateStatsUI() {
         const participantsToday = appState.stats.participantsToday || 0;
         const trend = appState.stats.trend || 'up';
 
-        // 1. Total de participantes
-        document.getElementById('totalParticipants').textContent = 
-            formatNumber(participants);
+        document.getElementById('totalParticipants').textContent = formatNumber(participants);
         
-        // Trend de participantes
         const trendElement = document.getElementById('participantsTrend');
         if (trendElement) {
-            const trendIcon = trend === 'up' ? 'fa-arrow-up' : 'fa-arrow-down';
-            const trendColor = trend === 'up' ? 'var(--trend-up)' : 'var(--trend-down)';
-            trendElement.innerHTML = `<i class="fas ${trendIcon}"></i> <span>+${participantsToday} hoy</span>`;
-            trendElement.style.color = trendColor;
-            trendElement.style.background = trend === 'up' ? 'rgba(0, 204, 136, 0.1)' : 'rgba(255, 107, 107, 0.1)';
+            trendElement.innerHTML = `<i class="fas fa-arrow-up"></i> <span>+${participantsToday} hoy</span>`;
         }
 
-        // 2. Tokens reservados
-        document.getElementById('tokensReserved').textContent = 
-            formatNumber(tokensReserved);
+        document.getElementById('tokensReserved').textContent = formatNumber(tokensReserved);
         
-        // Progreso de tokens reservados
         const reservedPercentage = Math.min((tokensReserved / CONFIG.TOTAL_TOKENS) * 100, 100);
         const reservedProgress = document.getElementById('reservedProgress');
         const reservedPercentageElement = document.getElementById('reservedPercentage');
         
-        if (reservedProgress) {
-            reservedProgress.style.width = `${reservedPercentage}%`;
-        }
-        if (reservedPercentageElement) {
-            reservedPercentageElement.textContent = `${reservedPercentage.toFixed(1)}%`;
-        }
+        if (reservedProgress) reservedProgress.style.width = `${reservedPercentage}%`;
+        if (reservedPercentageElement) reservedPercentageElement.textContent = `${reservedPercentage.toFixed(1)}%`;
 
-        // 3. Días para lanzamiento
         document.getElementById('daysToLaunch').textContent = daysToLaunch;
 
-        // 4. Tokens disponibles
         const tokensRemaining = CONFIG.TOTAL_TOKENS - tokensReserved;
-        document.getElementById('tokensRemaining').textContent = 
-            formatNumber(tokensRemaining);
+        document.getElementById('tokensRemaining').textContent = formatNumber(tokensRemaining);
 
-        // 5. Info de tokens
         const tokensInfo = document.getElementById('tokensInfo');
-        if (tokensInfo) {
-            tokensInfo.textContent = `de ${formatNumber(CONFIG.TOTAL_TOKENS)} total`;
-        }
+        if (tokensInfo) tokensInfo.textContent = `de ${formatNumber(CONFIG.TOTAL_TOKENS)} total`;
 
-        // Barra de progreso del airdrop
         const progressParticipants = (participants / CONFIG.MAX_PARTICIPANTS) * 100;
         const progressFill = document.getElementById('progressFill');
-        if (progressFill) {
-            progressFill.style.width = `${Math.min(progressParticipants, 100)}%`;
-        }
+        if (progressFill) progressFill.style.width = `${Math.min(progressParticipants, 100)}%`;
 
-        // Actualizar límites
         const remainingSlots = CONFIG.MAX_PARTICIPANTS - participants;
         const remainingSlotsElement = document.getElementById('remainingSlots');
-        if (remainingSlotsElement) {
-            remainingSlotsElement.textContent = 
-                `${remainingSlots.toLocaleString()} cupos disponibles`;
-        }
+        if (remainingSlotsElement) remainingSlotsElement.textContent = `${remainingSlots.toLocaleString()} cupos disponibles`;
 
-        // Mostrar advertencias
         const airdropLimit = document.getElementById('airdropLimit');
         if (airdropLimit) {
             if (progressParticipants >= 80) {
@@ -253,7 +211,7 @@ function updateStatsUI() {
     }
 }
 
-// Función para formatear números - MEJORADA
+// Función para formatear números
 function formatNumber(num) {
     if (num >= 1000000) {
         return (num / 1000000).toFixed(1) + 'M';
@@ -264,333 +222,170 @@ function formatNumber(num) {
     }
 }
 
-// Actualizar disponibilidad de wallets - MEJORADO
-async function updateWalletAvailability() {
-    console.log('🔍 Actualizando disponibilidad de wallets...');
-
-    // Phantom
-    const phantomStatus = document.getElementById('phantomStatus');
-    if (phantomStatus) {
-        if (window.solana && window.solana.isPhantom) {
-            phantomStatus.classList.add('available');
-            phantomStatus.classList.remove('unavailable');
-            console.log('✅ Phantom disponible');
-        } else {
-            phantomStatus.classList.add('unavailable');
-            phantomStatus.classList.remove('available');
-            console.log('❌ Phantom no disponible');
-        }
-    }
-
-    // Solflare - DETECCIÓN MEJORADA
-    const solflareStatus = document.getElementById('solflareStatus');
-    if (solflareStatus) {
-        let isSolflareAvailable = false;
-        
-        if (window.solflare) {
-            console.log('🌞 Solflare detectado:', window.solflare);
-            
-            // Verificar diferentes formas de detección
-            if (window.solflare.isSolflare) {
-                isSolflareAvailable = true;
-                console.log('✅ Solflare detectado por isSolflare');
-            } else if (typeof window.solflare.connect === 'function') {
-                isSolflareAvailable = true;
-                console.log('✅ Solflare detectado por connect function');
-            } else if (typeof window.solflare.request === 'function') {
-                isSolflareAvailable = true;
-                console.log('✅ Solflare detectado por request function');
-            } else if (typeof window.solflare === 'object') {
-                // Verificar si tiene propiedades típicas de una wallet
-                const walletProps = ['connect', 'disconnect', 'signMessage', 'signTransaction'];
-                const hasWalletProps = walletProps.some(prop => typeof window.solflare[prop] === 'function');
-                
-                if (hasWalletProps) {
-                    isSolflareAvailable = true;
-                    console.log('✅ Solflare detectado por propiedades de wallet');
-                }
-            }
-        }
-
-        if (isSolflareAvailable) {
-            solflareStatus.classList.add('available');
-            solflareStatus.classList.remove('unavailable');
-            console.log('✅ Solflare disponible');
-        } else {
-            solflareStatus.classList.add('unavailable');
-            solflareStatus.classList.remove('available');
-            console.log('❌ Solflare no disponible');
-        }
-    }
-
-    // Backpack - DETECCIÓN MEJORADA
-    const backpackStatus = document.getElementById('backpackStatus');
-    if (backpackStatus) {
-        let isBackpackAvailable = false;
-        
-        if (window.backpack) {
-            console.log('🎒 Backpack detectado:', window.backpack);
-            
-            if (window.backpack.isBackpack) {
-                isBackpackAvailable = true;
-                console.log('✅ Backpack detectado por isBackpack');
-            } else if (typeof window.backpack.connect === 'function') {
-                isBackpackAvailable = true;
-                console.log('✅ Backpack detectado por connect function');
-            } else if (window.backpack.solana) {
-                isBackpackAvailable = true;
-                console.log('✅ Backpack detectado por solana object');
-            } else if (typeof window.backpack === 'object' && Object.keys(window.backpack).length > 0) {
-                isBackpackAvailable = true;
-                console.log('✅ Backpack detectado por objeto no vacío');
-            }
-        }
-
-        if (isBackpackAvailable) {
-            backpackStatus.classList.add('available');
-            backpackStatus.classList.remove('unavailable');
-            console.log('✅ Backpack disponible');
-        } else {
-            backpackStatus.classList.add('unavailable');
-            backpackStatus.classList.remove('available');
-            console.log('❌ Backpack no disponible');
-        }
-    }
-
-    // Uniswap (siempre disponible)
-    const uniswapStatus = document.getElementById('uniswapStatus');
-    if (uniswapStatus) {
-        uniswapStatus.classList.add('available');
-        uniswapStatus.classList.remove('unavailable');
-    }
-}
-
-// Función para conectar wallet - MEJORADO para Solflare
+// FUNCIÓN PRINCIPAL CORREGIDA PARA CONECTAR WALLETS
 async function connectToWallet(walletType) {
-    console.log(`Intentando conectar ${walletType}...`);
-
+    console.log(`Conectando ${walletType}...`);
+    
     try {
-        let publicKey = null;
-
-        // Simulación para desarrollo
-        if (!window.solana && !window.solflare && !window.backpack) {
-            console.log('Modo desarrollo: Simulando conexión de wallet');
-            
-            const fakeAddress = 'SOL' + Math.random().toString(36).substr(2, 33).toUpperCase();
-            
-            switch(walletType) {
-                case 'phantom':
-                case 'solflare':
-                case 'backpack':
-                case 'uniswap':
-                    publicKey = fakeAddress;
-                    console.log(`✅ Dirección simulada: ${publicKey}`);
-                    showNotification('Modo desarrollo: Wallet simulada', 'info');
-                    break;
-                default:
-                    throw new Error('Tipo de wallet no soportado');
-            }
-            
-            return publicKey;
+        // En desarrollo, usar siempre simulación
+        if (!appState.isProduction) {
+            console.log('🛠️ Modo desarrollo: Simulando conexión');
+            const fakeAddress = generateFakeAddress();
+            showNotification(`Modo desarrollo: ${walletType} simulada`, 'info');
+            return fakeAddress;
         }
-
-        // Código real para producción
+        
+        // En producción, intentar conexión real
+        let publicKey = null;
+        let errorMessage = null;
+        
         switch(walletType) {
             case 'phantom':
                 if (window.solana && window.solana.isPhantom) {
-                    const response = await window.solana.connect();
-                    publicKey = response.publicKey.toString();
-                    console.log(`✅ Phantom conectada: ${publicKey}`);
+                    try {
+                        const response = await window.solana.connect();
+                        publicKey = response.publicKey.toString();
+                        console.log(`✅ Phantom conectada: ${publicKey}`);
+                    } catch (error) {
+                        errorMessage = `Phantom: ${error.message || 'Error desconocido'}`;
+                        console.error('Error Phantom:', error);
+                    }
                 } else {
-                    throw new Error('Phantom no detectada. Instala la extensión.');
+                    errorMessage = 'Phantom no está instalada. Instala la extensión.';
                 }
                 break;
-
+                
             case 'solflare':
                 if (window.solflare) {
-                    console.log('🌞 Conectando con Solflare...');
-                    
-                    // Solflare puede tener diferentes APIs
-                    let response;
-                    
-                    // Método 1: API moderna con connect()
-                    if (typeof window.solflare.connect === 'function') {
-                        try {
+                    try {
+                        // Intentar diferentes métodos de conexión para Solflare
+                        let response;
+                        
+                        // Método 1: connect()
+                        if (typeof window.solflare.connect === 'function') {
                             response = await window.solflare.connect();
-                            console.log('Respuesta de Solflare connect():', response);
-                            
-                            if (response && response.publicKey) {
-                                publicKey = response.publicKey.toString();
-                            } else if (typeof response === 'string') {
-                                publicKey = response;
-                            } else {
-                                // Si no obtenemos la clave directamente, intentamos obtener cuentas
-                                const accounts = await window.solflare.request({ 
-                                    method: 'getAccounts' 
-                                });
-                                
-                                if (accounts && accounts.length > 0) {
-                                    publicKey = accounts[0];
-                                }
-                            }
-                        } catch (connectError) {
-                            console.log('Connect() falló, intentando método alternativo:', connectError);
                         }
-                    }
-                    
-                    // Método 2: Usar request() si connect() falló
-                    if (!publicKey && typeof window.solflare.request === 'function') {
-                        try {
-                            response = await window.solflare.request({ 
-                                method: 'connect' 
-                            });
-                            console.log('Respuesta de Solflare request(connect):', response);
-                            
-                            if (response && response.publicKey) {
+                        // Método 2: request()
+                        else if (typeof window.solflare.request === 'function') {
+                            response = await window.solflare.request({ method: 'connect' });
+                        }
+                        
+                        // Procesar respuesta
+                        if (response) {
+                            if (response.publicKey) {
                                 publicKey = response.publicKey.toString();
                             } else if (Array.isArray(response) && response.length > 0) {
                                 publicKey = response[0];
                             } else if (typeof response === 'string') {
                                 publicKey = response;
                             }
-                        } catch (requestError) {
-                            console.log('Request(connect) falló:', requestError);
                         }
-                    }
-                    
-                    // Método 3: Intentar obtener cuentas directamente
-                    if (!publicKey && typeof window.solflare.request === 'function') {
-                        try {
-                            const accounts = await window.solflare.request({ 
-                                method: 'getAccounts' 
-                            });
-                            
-                            if (accounts && accounts.length > 0) {
-                                publicKey = accounts[0];
-                            }
-                        } catch (accountsError) {
-                            console.log('getAccounts falló:', accountsError);
+                        
+                        if (publicKey) {
+                            console.log(`✅ Solflare conectada: ${publicKey}`);
+                        } else {
+                            errorMessage = 'Solflare: No se pudo obtener la dirección';
                         }
+                    } catch (error) {
+                        errorMessage = `Solflare: ${error.message || 'Error desconocido'}`;
+                        console.error('Error Solflare:', error);
                     }
-                    
-                    if (!publicKey) {
-                        throw new Error('No se pudo obtener la dirección de Solflare. Por favor, acepta la conexión.');
-                    }
-                    
-                    console.log(`✅ Solflare conectada: ${publicKey}`);
                 } else {
-                    throw new Error('Solflare no detectada. Instala la extensión.');
+                    errorMessage = 'Solflare no está instalada. Instala la extensión.';
                 }
                 break;
-
+                
             case 'backpack':
                 if (window.backpack) {
                     try {
-                        console.log('🎒 Intentando conectar Backpack...');
-                        
                         let response;
                         
-                        // Método 1: connect directo
+                        // Intentar diferentes métodos
                         if (typeof window.backpack.connect === 'function') {
                             response = await window.backpack.connect();
-                        }
-                        // Método 2: A través de solana object
-                        else if (window.backpack.solana && window.backpack.solana.connect) {
+                        } else if (window.backpack.solana && window.backpack.solana.connect) {
                             response = await window.backpack.solana.connect();
-                        }
-                        // Método 3: Solicitud estándar
-                        else if (typeof window.backpack.request === 'function') {
-                            response = await window.backpack.request({ 
-                                method: 'connect' 
-                            });
-                        } else {
-                            throw new Error('Backpack API no reconocida');
+                        } else if (typeof window.backpack.request === 'function') {
+                            response = await window.backpack.request({ method: 'connect' });
                         }
                         
-                        // Extraer la clave pública
-                        if (response && response.publicKey) {
-                            publicKey = response.publicKey.toString();
-                        } else if (typeof response === 'string') {
-                            publicKey = response;
-                        } else if (response && response.toString) {
-                            publicKey = response.toString();
-                        } else if (response && response[0]) {
-                            publicKey = response[0];
-                        }
-                        
-                        if (!publicKey) {
-                            const possibleKeys = Object.values(response || {}).filter(
-                                val => typeof val === 'string' && val.length > 40
-                            );
-                            if (possibleKeys.length > 0) {
-                                publicKey = possibleKeys[0];
+                        if (response) {
+                            if (response.publicKey) {
+                                publicKey = response.publicKey.toString();
+                            } else if (typeof response === 'string') {
+                                publicKey = response;
+                            } else if (Array.isArray(response) && response.length > 0) {
+                                publicKey = response[0];
                             }
                         }
                         
-                        if (!publicKey) {
-                            throw new Error('No se pudo extraer la clave pública de Backpack');
+                        if (publicKey) {
+                            console.log(`✅ Backpack conectada: ${publicKey}`);
+                        } else {
+                            errorMessage = 'Backpack: No se pudo obtener la dirección';
                         }
-                        
-                        console.log(`✅ Backpack conectada: ${publicKey}`);
-                    } catch (backpackError) {
-                        console.error('Error específico de Backpack:', backpackError);
-                        throw new Error(`Backpack: ${backpackError.message || 'Error desconocido'}`);
+                    } catch (error) {
+                        errorMessage = `Backpack: ${error.message || 'Error desconocido'}`;
+                        console.error('Error Backpack:', error);
                     }
                 } else {
-                    throw new Error('Backpack no detectada. Instala la extensión.');
+                    errorMessage = 'Backpack no está instalada. Instala la extensión.';
                 }
                 break;
-
+                
             case 'uniswap':
                 const address = prompt('Ingresa tu dirección de wallet Solana (44 caracteres):');
                 if (address && address.length === 44 && /^[1-9A-HJ-NP-Za-km-z]{44}$/.test(address)) {
                     publicKey = address;
                     console.log(`✅ Dirección manual: ${publicKey}`);
                 } else {
-                    throw new Error('Dirección de wallet inválida');
+                    errorMessage = 'Dirección de wallet inválida';
                 }
                 break;
-
+                
             default:
-                throw new Error('Tipo de wallet no soportado');
+                errorMessage = 'Tipo de wallet no soportado';
         }
-
-        if (!publicKey) {
-            throw new Error('No se pudo obtener la clave pública');
-        }
-
-        console.log(`🎉 Wallet conectada exitosamente: ${publicKey}`);
-        return publicKey;
-
-    } catch (error) {
-        console.error(`💥 Error conectando wallet: ${error.message}`);
         
-        if (error.message.includes('user rejected') || error.message.includes('canceló')) {
-            showNotification('Conexión cancelada por el usuario', 'error');
-        } else if (error.message.includes('not detected') || error.message.includes('no detectada')) {
-            showNotification(`${walletType} no está instalada`, 'error');
-            openWalletStore(walletType);
-        } else if (error.message.includes('Solflare') || error.message.includes('Backpack')) {
-            showNotification(`${error.message}`, 'error');
-        } else {
-            showNotification(`Error: ${error.message}`, 'error');
+        // Si hubo error, mostrar notificación
+        if (errorMessage) {
+            showNotification(errorMessage, 'error');
+            
+            // Si es error de wallet no instalada, ofrecer instalarla
+            if (errorMessage.includes('no está instalada')) {
+                const stores = {
+                    phantom: 'https://phantom.app/',
+                    solflare: 'https://solflare.com/',
+                    backpack: 'https://www.backpack.app/'
+                };
+                
+                if (stores[walletType]) {
+                    const shouldInstall = confirm(`${walletType} no está instalada. ¿Quieres ir a la página de instalación?`);
+                    if (shouldInstall) {
+                        window.open(stores[walletType], '_blank');
+                    }
+                }
+            }
+            
+            return null;
         }
-
+        
+        if (!publicKey) {
+            throw new Error('No se pudo obtener la dirección de la wallet');
+        }
+        
+        return publicKey;
+        
+    } catch (error) {
+        console.error(`Error conectando ${walletType}:`, error);
+        showNotification(`Error: ${error.message}`, 'error');
         return null;
     }
 }
 
-// Función para abrir tienda de wallets
-function openWalletStore(walletType) {
-    const stores = {
-        phantom: 'https://phantom.app/',
-        solflare: 'https://solflare.com/',
-        backpack: 'https://www.backpack.app/'
-    };
-
-    if (stores[walletType]) {
-        window.open(stores[walletType], '_blank');
-    }
+// Generar dirección falsa para desarrollo
+function generateFakeAddress() {
+    return 'So1' + Math.random().toString(36).substr(2, 43).toUpperCase();
 }
 
 // Registrar wallet en el airdrop
@@ -599,15 +394,13 @@ async function registerWallet(walletAddress) {
         let data;
         
         if (appState.isProduction) {
-            // En producción, usar API real
             const response = await fetch(`${API_BASE}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     wallet: walletAddress,
                     walletType: appState.selectedWallet,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent
+                    timestamp: new Date().toISOString()
                 })
             });
 
@@ -617,8 +410,6 @@ async function registerWallet(walletAddress) {
             
             data = await response.json();
         } else {
-            // En desarrollo, usar mock
-            console.log('🛠️ Usando mock API para registro');
             data = await mockAPI.registerWallet(walletAddress, appState.selectedWallet);
         }
 
@@ -629,12 +420,7 @@ async function registerWallet(walletAddress) {
         return data;
     } catch (error) {
         console.error('Error registrando wallet:', error);
-        
-        // En producción, ofrecer alternativa
-        if (appState.isProduction) {
-            showNotification('Error registrando wallet. Intenta nuevamente o contacta soporte.', 'error');
-        }
-        
+        showNotification('Error registrando wallet. Intenta nuevamente.', 'error');
         throw error;
     }
 }
@@ -651,14 +437,12 @@ async function spinWheel() {
         const wheel = document.getElementById('wheel');
         const wheelResult = document.getElementById('wheelResult');
         
-        // Deshabilitar botón
         spinBtn.disabled = true;
         spinBtn.innerHTML = '<div class="spinner"></div> Girando...';
 
         let data;
         
         if (appState.isProduction) {
-            // En producción, usar API real
             const response = await fetch(`${API_BASE}/spin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -674,8 +458,6 @@ async function spinWheel() {
             
             data = await response.json();
         } else {
-            // En desarrollo, usar mock
-            console.log('🛠️ Usando mock API para ruleta');
             data = await mockAPI.spinWheel(appState.walletAddress);
         }
 
@@ -687,15 +469,12 @@ async function spinWheel() {
         const spinDegrees = 1800 + Math.random() * 1800;
         wheel.style.transform = `rotate(${spinDegrees}deg)`;
         
-        // Esperar animación
         await new Promise(resolve => setTimeout(resolve, 3000));
 
-        // Actualizar datos
         if (appState.userData) {
             appState.userData.tokens = data.totalTokens;
         }
 
-        // Mostrar resultado
         const colorMap = {
             '#4A90E2': 'azul',
             '#00CC88': 'verde',
@@ -713,19 +492,16 @@ async function spinWheel() {
             <small style="color: #666;">${colorName ? `Color: ${colorName}` : ''}</small>
         `;
 
-        // Deshabilitar botón por 24h
         spinBtn.disabled = true;
         spinBtn.innerHTML = '<i class="fas fa-clock"></i> VUELVE MAÑANA';
 
         showNotification(`¡Ganaste ${data.prize} $REGRET en la ruleta!`, 'success');
         createConfetti();
 
-        // Actualizar estadísticas después de girar
         setTimeout(() => {
             loadStats();
         }, 2000);
 
-        // Habilitar después de 10 segundos (para prueba)
         setTimeout(() => {
             spinBtn.disabled = false;
             spinBtn.innerHTML = '<i class="fas fa-redo-alt"></i> GIRAR RULETA';
@@ -755,7 +531,6 @@ async function loadReferralData() {
             }
             data = await response.json();
         } else {
-            console.log('🛠️ Usando mock API para referidos');
             data = await mockAPI.getReferrals(appState.walletAddress);
         }
 
@@ -791,11 +566,12 @@ function updateUI() {
     if (appState.walletConnected && appState.userData) {
         const walletStatus = document.getElementById('walletStatus');
         const walletAddress = document.getElementById('walletAddress');
+        
         if (walletStatus) {
             walletStatus.style.display = 'flex';
-            // Ocultar la sección de wallets y botón
             document.getElementById('walletConnectContainer').style.display = 'none';
         }
+        
         if (walletAddress) {
             walletAddress.textContent = `${appState.walletAddress.slice(0, 6)}...${appState.walletAddress.slice(-4)}`;
         }
@@ -804,12 +580,12 @@ function updateUI() {
 
         const spinBtn = document.getElementById('spinBtn');
         const wheelResult = document.getElementById('wheelResult');
+        
         if (spinBtn) spinBtn.disabled = false;
         if (wheelResult) {
             wheelResult.innerHTML = '<p><i class="fas fa-check-circle" style="color: var(--secondary);"></i> ¡Listo para girar!</p>';
         }
         
-        // Actualizar estadísticas cuando se conecta
         setTimeout(() => {
             loadStats();
         }, 1000);
@@ -823,89 +599,21 @@ async function checkExistingConnection() {
 
     if (savedWallet && savedWalletType) {
         console.log('Wallet guardada detectada:', savedWallet);
+        
+        // Simplemente restaurar la sesión guardada
+        appState.walletAddress = savedWallet;
+        appState.selectedWallet = savedWalletType;
+        appState.walletConnected = true;
 
-        // Verificar si la wallet sigue conectada y funcional
-        const isWalletStillValid = await verifyWalletConnection(savedWalletType);
+        appState.userData = {
+            wallet: savedWallet,
+            referralCode: `REGRET-${savedWallet.slice(0, 8).toUpperCase()}`,
+            tokens: 1000,
+            referralCount: Math.floor(Math.random() * 5)
+        };
 
-        if (isWalletStillValid) {
-            appState.walletAddress = savedWallet;
-            appState.selectedWallet = savedWalletType;
-            appState.walletConnected = true;
-
-            appState.userData = {
-                wallet: savedWallet,
-                referralCode: `REGRET-${savedWallet.slice(0, 8).toUpperCase()}`,
-                tokens: 1000,
-                referralCount: Math.floor(Math.random() * 5)
-            };
-
-            updateUI();
-            showNotification('Wallet reconectada automáticamente', 'success');
-        } else {
-            // La wallet guardada ya no es válida, limpiamos los datos
-            console.log('Wallet guardada expirada, limpiando datos...');
-            localStorage.removeItem('regret_wallet');
-            localStorage.removeItem('regret_wallet_type');
-            showNotification('Sesión de wallet expirada. Conecta nuevamente.', 'info');
-        }
-    }
-}
-
-// Verificar si la wallet sigue conectada y funcional - MEJORADO para Solflare
-async function verifyWalletConnection(walletType) {
-    try {
-        switch(walletType) {
-            case 'phantom':
-                if (window.solana && window.solana.isPhantom) {
-                    const response = await window.solana.connect({ onlyIfTrusted: true });
-                    return response && response.publicKey;
-                }
-                break;
-
-            case 'solflare':
-                if (window.solflare) {
-                    try {
-                        let isConnected = false;
-                        
-                        // Método 1: Propiedad isConnected
-                        if (window.solflare.isConnected) {
-                            isConnected = window.solflare.isConnected;
-                        }
-                        
-                        // Método 2: Solicitar cuentas
-                        if (!isConnected && typeof window.solflare.request === 'function') {
-                            const accounts = await window.solflare.request({ method: 'getAccounts' });
-                            isConnected = accounts && accounts.length > 0;
-                        }
-                        
-                        return isConnected;
-                    } catch (error) {
-                        console.log('Error verificando Solflare:', error);
-                        return false;
-                    }
-                }
-                break;
-
-            case 'backpack':
-                if (window.backpack) {
-                    try {
-                        const accounts = await window.backpack.request({ method: 'getAccounts' });
-                        return accounts && accounts.length > 0;
-                    } catch (error) {
-                        return false;
-                    }
-                }
-                break;
-
-            case 'uniswap':
-                // Para dirección manual, siempre consideramos válida
-                return true;
-        }
-
-        return false;
-    } catch (error) {
-        console.log(`Error verificando conexión de ${walletType}:`, error);
-        return false;
+        updateUI();
+        showNotification('Wallet reconectada automáticamente', 'success');
     }
 }
 
@@ -991,11 +699,8 @@ function setupEventListeners() {
                 '<p style="color: var(--text-muted);"><i class="fas fa-info-circle"></i> Conecta tu wallet para girar la ruleta</p>';
 
             const wheel = document.getElementById('wheel');
-            if (wheel) {
-                wheel.style.transform = 'rotate(0deg)';
-            }
+            if (wheel) wheel.style.transform = 'rotate(0deg)';
 
-            // Quitar selección de wallet
             document.querySelectorAll('.wallet-option').forEach(el => {
                 el.classList.remove('selected');
             });

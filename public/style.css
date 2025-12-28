@@ -1,9 +1,5 @@
-
-/* ============================================
-   VARIABLES CSS - SOLO UNA DECLARACIÓN
-   ============================================ */
+/* CSS Variables */
 :root {
-  /* Colores principales */
   --primary: #4A90E2;
   --secondary: #00CC88;
   --accent: #FFD166;
@@ -12,24 +8,16 @@
   --teal: #4ECDC4;
   --yellow: #FFD166;
   --red: #FF6B6B;
-  
-  /* Fondos */
   --dark-bg: #0a0a0a;
   --darker-bg: #050505;
   --light-bg: #1a1a1a;
-  
-  /* Texto */
   --text-light: #ffffff;
   --text-muted: #cccccc;
   --text-dark: #888888;
-  
-  /* Bordes y efectos */
   --border-color: rgba(255, 255, 255, 0.1);
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   --border-radius: 12px;
   --transition: all 0.3s ease;
-  
-  /* Estados */
   --selected-color: #6C63FF;
   --hover-color: rgba(108, 99, 255, 0.1);
   --success-green: #00CC88;
@@ -37,9 +25,7 @@
   --trend-down: #FF6B6B;
 }
 
-/* ============================================
-   RESET Y ESTILOS BASE
-   ============================================ */
+/* Reset y Estilos Base */
 * {
   margin: 0;
   padding: 0;
@@ -61,9 +47,7 @@ body {
   padding: 0 20px;
 }
 
-/* ============================================
-   HEADER
-   ============================================ */
+/* Header */
 header {
   padding: 1.5rem 0;
   border-bottom: 1px solid var(--border-color);
@@ -121,9 +105,7 @@ header {
   transform: translateY(-2px);
 }
 
-/* ============================================
-   WALLET CONNECTION SECTION
-   ============================================ */
+/* Wallet Section */
 .header-wallet-section {
   display: flex;
   flex-direction: column;
@@ -292,9 +274,7 @@ header {
   transform: none !important;
 }
 
-/* ============================================
-   HERO SECTION
-   ============================================ */
+/* Hero Section */
 .hero {
   text-align: center;
   padding: 3rem 0 4rem;
@@ -321,12 +301,9 @@ header {
   max-width: 600px;
   margin: 0 auto;
   color: var(--text-muted);
-  line-height: 1.8;
 }
 
-/* ============================================
-   AIRDROP SECTION
-   ============================================ */
+/* Airdrop Section */
 .airdrop-section {
   text-align: center;
   padding: 3rem 0;
@@ -348,10 +325,8 @@ header {
   font-size: 1.1rem;
   margin-bottom: 2rem;
   color: var(--text-light);
-  line-height: 1.6;
 }
 
-/* Limit Warning */
 .limit-warning {
   display: flex;
   flex-direction: column;
@@ -372,6 +347,7 @@ header {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   overflow: hidden;
+  margin: 1rem 0;
 }
 
 .progress-fill {
@@ -380,7 +356,6 @@ header {
   transition: width 0.3s ease;
 }
 
-/* Airdrop Note */
 .airdrop-note {
   padding: 1.5rem;
   background: rgba(255, 209, 102, 0.1);
@@ -404,9 +379,7 @@ header {
   line-height: 1.6;
 }
 
-/* ============================================
-   STATS GRID
-   ============================================ */
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -518,9 +491,7 @@ header {
   opacity: 0.8;
 }
 
-/* ============================================
-   GAMIFICATION SECTION
-   ============================================ */
+/* Gamification Section */
 .gamification {
   padding: 4rem 0;
   text-align: center;
@@ -601,9 +572,7 @@ header {
   font-size: 1.2rem;
 }
 
-/* ============================================
-   DAILY WHEEL SECTION
-   ============================================ */
+/* Daily Wheel */
 .daily-wheel {
   padding: 4rem 0;
   text-align: center;
@@ -731,13 +700,9 @@ header {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  max-width: 600px;
-  margin: 0 auto;
 }
 
-/* ============================================
-   REFERRAL SECTION
-   ============================================ */
+/* Referral Section */
 .referral-section {
   padding: 2rem;
   background: rgba(255, 255, 255, 0.05);
@@ -791,9 +756,7 @@ header {
   gap: 8px;
 }
 
-/* ============================================
-   FOOTER
-   ============================================ */
+/* Footer */
 footer {
   padding: 4rem 0 2rem;
   text-align: center;
@@ -837,10 +800,6 @@ footer {
   display: block;
   margin-top: 0.5rem;
 }
-
-/* ============================================
-   UTILITY COMPONENTS
-   ============================================ */
 
 /* Notification */
 .notification {
@@ -903,9 +862,7 @@ footer {
   animation: confettiRain 3s linear forwards;
 }
 
-/* ============================================
-   ANIMATIONS
-   ============================================ */
+/* Animaciones */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -934,9 +891,7 @@ footer {
   }
 }
 
-/* ============================================
-   RESPONSIVE DESIGN
-   ============================================ */
+/* Responsive Design */
 
 /* Tablet */
 @media (max-width: 768px) {
