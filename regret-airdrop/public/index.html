@@ -40,14 +40,38 @@
                 </a>
             </div>
 
-            <!-- Wallet Status -->
-            <div id="walletStatus" class="wallet-status" style="display: none;">
-                <i class="fas fa-wallet" style="color: var(--therapy-green);"></i>
-                <span class="wallet-address" id="walletAddress"></span>
-                <button class="disconnect-btn" id="disconnectBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
+            <!-- Wallet Selection -->
+<div id="walletSelector" class="wallet-options">
+    <div class="wallet-option" data-wallet="phantom">
+        <div class="wallet-icon"><i class="fas fa-ghost"></i></div>
+        <div class="wallet-name">Phantom</div>
+        <div class="wallet-status-indicator" id="phantomStatus"></div>
+    </div>
+    <div class="wallet-option" data-wallet="solflare">
+        <div class="wallet-icon"><i class="fas fa-sun"></i></div>
+        <div class="wallet-name">Solflare</div>
+        <div class="wallet-status-indicator" id="solflareStatus"></div>
+    </div>
+    <div class="wallet-option" data-wallet="backpack">
+        <div class="wallet-icon"><i class="fas fa-backpack"></i></div>
+        <div class="wallet-name">Backpack</div>
+        <div class="wallet-status-indicator" id="backpackStatus"></div>
+    </div>
+    <div class="wallet-option" data-wallet="metamask">
+        <div class="wallet-icon"><i class="fab fa-ethereum"></i></div>
+        <div class="wallet-name">MetaMask*</div>
+        <div class="wallet-status-indicator" id="metamaskStatus"></div>
+    </div>
+    <div class="wallet-option" data-wallet="uniswap">
+        <div class="wallet-icon"><i class="fas fa-wallet"></i></div>
+        <div class="wallet-name">Uniswap*</div>
+        <div class="wallet-status-indicator" id="uniswapStatus"></div>
+    </div>
+</div>
+
+<small style="color: var(--text-muted); display: block; text-align: center; margin-top: 0.5rem;">
+    * MetaMask y Uniswap requieren configuración adicional para Solana
+</small>
         </header>
 
         <!-- Hero Section -->
@@ -260,5 +284,6 @@
 </body>
 
 </html>
+
 
 
