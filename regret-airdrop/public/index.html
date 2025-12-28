@@ -176,7 +176,54 @@
             </div>
         </section>
 
-        v
+        <!-- Daily Wheel -->
+<section class="daily-wheel">
+    <h2 class="section-title">🎡 Ruleta de Tokens Diaria</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+        Gira una vez cada 24 horas. Todos ganan tokens que serán distribuidos al lanzamiento.
+    </p>
+    
+    <div class="wheel-wrapper">
+        <div class="wheel-container" id="wheel">
+            <div class="wheel-pointer">⬇️</div>
+            <button class="spin-button" id="spinBtn">GIRAR</button>
+        </div>
+        
+        <!-- Leyenda de colores y números -->
+        <div class="wheel-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--cry-blue);"></div>
+                <span class="legend-text">100 $REGRET</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--therapy-green);"></div>
+                <span class="legend-text">250 $REGRET</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--tear-yellow);"></div>
+                <span class="legend-text">500 $REGRET</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--regret-purple);"></div>
+                <span class="legend-text">750 $REGRET</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--error-red);"></div>
+                <span class="legend-text">1000 $REGRET</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4ECDC4;"></div>
+                <span class="legend-text">1500 $REGRET</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="wheelResult" style="margin-top: 2rem; min-height: 60px;">
+        <p style="color: var(--text-muted);">
+            <i class="fas fa-info-circle"></i> Conecta tu wallet para girar la ruleta
+        </p>
+    </div>
+</section>
         <!-- Referral Section -->
         <div id="referralSection" class="referral-section">
             <h3><i class="fas fa-user-friends"></i> Invita Amigos, Gana Más</h3>
@@ -213,4 +260,5 @@
 </body>
 
 </html>
+
 
