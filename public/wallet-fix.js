@@ -1,7 +1,7 @@
 // Fix específico para Solflare
 if (window.solflare && !window.solflare.connect) {
     console.log('Aplicando fix para Solflare legacy...');
-    
+
     // Agregar método connect si no existe
     if (!window.solflare.connect) {
         window.solflare.connect = async () => {
@@ -10,15 +10,42 @@ if (window.solflare && !window.solflare.connect) {
                 if (window.solflare._solflareWeb3 && window.solflare._solflareWeb3.connect) {
                     return await window.solflare._solflareWeb3.connect();
                 }
-                
+
                 // Otro intento
                 if (window.solflare.publicKey) {
                     return { publicKey: window.solflare.publicKey };
                 }
-                
+
                 throw new Error('No se pudo conectar a Solflare');
             } catch (error) {
                 console.error('Error en fix Solflare:', error);
+                throw error;
+            }
+        };
+    }
+}
+
+// Fix específico para Backpack
+if (window.backpack && !window.backpack.connect) {
+    console.log('Aplicando fix para Backpack legacy...');
+
+    // Agregar método connect si no existe
+    if (!window.backpack.connect) {
+        window.backpack.connect = async () => {
+            try {
+                // Método alternativo para Backpack antiguo
+                if (window.backpack._backpackWeb3 && window.backpack._backpackWeb3.connect) {
+                    return await window.backpack._backpackWeb3.connect();
+                }
+
+                // Otro intento
+                if (window.backpack.publicKey) {
+                    return { publicKey: window.backpack.publicKey };
+                }
+
+                throw new Error('No se pudo conectar a Backpack');
+            } catch (error) {
+                console.error('Error en fix Backpack:', error);
                 throw error;
             }
         };
