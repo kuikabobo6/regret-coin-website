@@ -37,27 +37,43 @@ async function loadStats() {
 // Actualizar UI de estadísticas
 function updateStatsUI() {
     if (appState.stats) {
+        const TOTAL_TOKENS = 10000000; // 10 millones totales
+        
         document.getElementById('totalParticipants').textContent = 
             appState.stats.totalParticipants.toLocaleString();
         
+        // Formatear tokens reservados
+        const tokensReserved = appState.stats.tokensReserved;
         document.getElementById('tokensReserved').textContent = 
-            (appState.stats.tokensReserved / 1000).toFixed(0) + 'K';
+            (tokensReserved / 1000).toFixed(1) + 'K';
+        
+        // Calcular tokens restantes
+        const tokensRemaining = TOTAL_TOKENS - tokensReserved;
+        document.getElementById('tokensRemaining').textContent = 
+            (tokensRemaining / 1000000).toFixed(1) + 'M';
+        
+        // Actualizar texto pequeño
+        document.getElementById('tokensAvailable').textContent = 
+            `de ${(TOTAL_TOKENS/1000000).toFixed(0)}M total`;
         
         document.getElementById('daysToLaunch').textContent = 
             appState.stats.daysToLaunch;
         
-        // Barra de progreso
-        const progress = (appState.stats.totalParticipants / CONFIG.MAX_PARTICIPANTS) * 100;
-        document.getElementById('progressFill').style.width = `${progress}%`;
+        // Barra de progreso (participantes)
+        const progressParticipants = (appState.stats.totalParticipants / 5000) * 100;
+        document.getElementById('progressFill').style.width = `${progressParticipants}%`;
+        
+        // Barra de progreso para tokens (opcional - añade en CSS si quieres)
+        const progressTokens = (tokensReserved / TOTAL_TOKENS) * 100;
         
         // Actualizar límites
-        const remaining = CONFIG.MAX_PARTICIPANTS - appState.stats.totalParticipants;
+        const remaining = 5000 - appState.stats.totalParticipants;
         document.getElementById('remainingSlots').textContent = 
             `${remaining.toLocaleString()} cupos disponibles`;
         
-        if (progress >= 90) {
+        if (progressParticipants >= 90) {
             document.getElementById('airdropLimit').style.display = 'block';
-            const limitText = progress >= 95 ? 
+            const limitText = progressParticipants >= 95 ? 
                 '⚠️ ¡ÚLTIMOS CUPOS! El airdrop está por cerrarse' :
                 '⚠️ Airdrop limitado - Quedan pocos cupos';
             document.getElementById('limitText').textContent = limitText;
@@ -363,4 +379,5 @@ function createConfetti() {
 // Exportar funciones para debugging
 window.appState = appState;
 window.connectToWallet = connectToWallet;
+
 window.showNotification = showNotification;
