@@ -715,3 +715,115 @@ footer {
     }
 
 }
+
+/* Contenedor de ruleta y leyenda */
+.wheel-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin: 2rem auto;
+    max-width: 800px;
+}
+
+/* Leyenda de la ruleta */
+.wheel-legend {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 2px solid var(--cry-blue);
+    max-width: 300px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+}
+
+.legend-color {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.legend-text {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+/* Números en la ruleta */
+.wheel-numbers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+.wheel-number {
+    position: absolute;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    transform-origin: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Posiciones específicas para los números */
+.wheel-number:nth-child(1) { /* 100 */
+    top: 15%;
+    left: 75%;
+    transform: translate(-50%, -50%) rotate(30deg);
+}
+
+.wheel-number:nth-child(2) { /* 250 */
+    top: 30%;
+    left: 90%;
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.wheel-number:nth-child(3) { /* 500 */
+    top: 65%;
+    left: 85%;
+    transform: translate(-50%, -50%) rotate(150deg);
+}
+
+.wheel-number:nth-child(4) { /* 750 */
+    top: 85%;
+    left: 60%;
+    transform: translate(-50%, -50%) rotate(210deg);
+}
+
+.wheel-number:nth-child(5) { /* 1000 */
+    top: 70%;
+    left: 25%;
+    transform: translate(-50%, -50%) rotate(270deg);
+}
+
+.wheel-number:nth-child(6) { /* 1500 */
+    top: 35%;
+    left: 20%;
+    transform: translate(-50%, -50%) rotate(330deg);
+}
+
+@media (max-width: 768px) {
+    .wheel-wrapper {
+        flex-direction: column;
+    }
+    
+    .wheel-legend {
+        width: 100%;
+        max-width: 280px;
+    }
+}
+
