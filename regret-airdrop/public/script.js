@@ -1,4 +1,49 @@
-// Configuración
+// Agrega esta función al inicio de script.js
+function updateWalletAvailability() {
+    const wallets = detectAvailableWallets();
+    
+    // Actualizar indicadores visuales
+    const indicators = {
+        phantom: document.getElementById('phantomStatus'),
+        solflare: document.getElementById('solflareStatus'),
+        backpack: document.getElementById('backpackStatus'),
+        metamask: document.getElementById('metamaskStatus'),
+        uniswap: document.getElementById('uniswapStatus')
+    };
+    
+    // Phantom
+    if (wallets.phantom) {
+        indicators.phantom.className = 'wallet-status-indicator available';
+    }
+    
+    // Solflare
+    if (wallets.solflare) {
+        indicators.solflare.className = 'wallet-status-indicator available';
+    }
+    
+    // Backpack
+    if (wallets.backpack) {
+        indicators.backpack.className = 'wallet-status-indicator available';
+    }
+    
+    // MetaMask (solo Ethereum, necesita snap para Solana)
+    if (wallets.metamask) {
+        indicators.metamask.className = 'wallet-status-indicator partial';
+    }
+    
+    // Uniswap (siempre disponible vía manual)
+    indicators.uniswap.className = 'wallet-status-indicator partial';
+    
+    // Deshabilitar opciones no disponibles
+    document.querySelectorAll('.wallet-option').forEach(option => {
+        const walletType = option.dataset.wallet;
+        if (walletType !== 'uniswap' && !wallets[walletType]) {
+            option.style.opacity = '0.5';
+            option.style.cursor = 'not-allowed';
+            option.title = `Instala ${walletType} para usar esta opción`;
+        }
+    });
+}// Configuración
 const API_BASE = '/api';
 const CONFIG = {
     AIRDROP_BASE: 1000,
@@ -531,4 +576,5 @@ window.appState = appState;
 window.connectToWallet = connectToWallet;
 
 window.showNotification = showNotification;
+
 
