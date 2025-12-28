@@ -83,39 +83,189 @@ function updateStatsUI() {
 
 // Detectar wallets disponibles
 function detectAvailableWallets() {
-    const wallets = {
-        phantom: window.phantom?.solana || window.solana,
-        solflare: window.solflare,
-        backpack: window.backpack
+    const wallets = {};
+    
+    // Detectar Phantom
+    if (window.phantom?.solana || window.solana) {
+        wallets.phantom = window.phantom?.solana || window.solana;
+    }
+    
+    // Detectar Solflare (nuevo y viejo formato)
+    if (window.solflare) {
+        wallets.solflare = window.solflare;
+    }
+    
+    // Detectar Backpack
+    if (window.backpack) {
+        wallets.backpack = window.backpack;
+    }
+    
+    // Detectar MetaMask (para Ethereum, con snap de Solana)
+    if (window.ethereum?.isMetaMask) {
+        wallets.metamask = window.ethereum;
+    }
+    
+    // Detectar si hay soporte para WalletConnect (Uniswap Wallet)
+    wallets.uniswap = {
+        connect: async () => {
+            // Placeholder para WalletConnect
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve({ publicKey: { toString: () => 'demo_wallet_address' } });
+                }, 1000);
+            });
+        }
     };
+    
+    console.log('Wallets detectadas:', Object.keys(wallets));
     return wallets;
 }
 
 // Conectar wallet
 async function connectToWallet(walletType) {
-    const wallets = detectAvailableWallets();
-    const wallet = wallets[walletType];
+    console.log(`Intentando conectar ${walletType}...`);
     
-    if (!wallet) {
-        showNotification(`Instala la extensión de ${walletType} primero`, 'error');
-        return null;
-    }
-
     try {
-        let publicKey;
+        let publicKey = null;
         
-        if (walletType === 'phantom' || walletType === 'solflare') {
-            const response = await wallet.connect();
-            publicKey = response.publicKey.toString();
-        } else {
-            await wallet.connect();
-            publicKey = wallet.publicKey.toString();
+        switch(walletType) {
+            case 'phantom':
+                // Phantom (estándar)
+                if (window.phantom?.solana || window.solana) {
+                    const phantom = window.phantom?.solana || window.solana;
+                    const response = await phantom.connect();
+                    publicKey = response.publicKey.toString();
+                } else {
+                    throw new Error('Phantom no detectada');
+                }
+                break;
+                
+            case 'solflare':
+                // Solflare (nuevo estándar)
+                if (window.solflare) {
+                    try {
+                        // Método moderno de Solflare
+                        const response = await window.solflare.connect();
+                        publicKey = response.publicKey.toString();
+                    } catch (error) {
+                        // Método legacy
+                        await window.solflare.connect();
+                        publicKey = window.solflare.publicKey.toString();
+                    }
+                } else {
+                    throw new Error('Solflare no detectada');
+                }
+                break;
+                
+            case 'backpack':
+                // Backpack
+                if (window.backpack) {
+                    const response = await window.backpack.connect();
+                    publicKey = response.publicKey.toString();
+                } else {
+                    throw new Error('Backpack no detectada');
+                }
+                break;
+                
+            case 'metamask':
+                // MetaMask para Solana (necesita snap)
+                if (window.ethereum && window.ethereum.isMetaMask) {
+                    try {
+                        // Intentar conectar a Solana via snap
+                        const result = await window.ethereum.request({
+                            method: 'wallet_requestSnaps',
+                            params: {
+                                'npm:@solana/snap': {}
+                            }
+                        });
+                        
+                        if (result['npm:@solana/snap']?.enabled) {
+                            const accounts = await window.ethereum.request({
+                                method: 'eth_requestAccounts'
+                            });
+                            // Convertir dirección EVM a Solana (esto es simplificado)
+                            // En producción necesitarías una librería de conversión
+                            publicKey = accounts[0];
+                            showNotification('MetaMask conectada (modo Ethereum)', 'info');
+                        } else {
+                            throw new Error('Instala el snap de Solana para MetaMask');
+                        }
+                    } catch (error) {
+                        throw new Error('MetaMask Solana snap no disponible');
+                    }
+                } else {
+                    throw new Error('MetaMask no detectada');
+                }
+                break;
+                
+            case 'uniswap':
+                // Uniswap Wallet (WalletConnect)
+                showNotification('Usa WalletConnect para conectar Uniswap Wallet', 'info');
+                // Implementación simplificada - en producción usar WalletConnect
+                const walletConnectModal = document.createElement('div');
+                walletConnectModal.innerHTML = `
+                    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: var(--card-bg); padding: 2rem; border-radius: 20px; max-width: 400px; text-align: center;">
+                            <h3 style="color: var(--tear-yellow); margin-bottom: 1rem;">Conectar Uniswap Wallet</h3>
+                            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Escanea este código QR con la app Uniswap Wallet:</p>
+                            <div id="qrCode" style="background: white; padding: 1rem; border-radius: 10px; margin: 1rem auto; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center;">
+                                <div style="color: black; font-family: monospace;">QR Code Placeholder</div>
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">O copia tu dirección Solana manualmente</p>
+                            <button id="manualConnect" style="background: var(--therapy-green); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; margin-top: 1rem;">Conectar Manualmente</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(walletConnectModal);
+                
+                // Manejar conexión manual
+                document.getElementById('manualConnect').addEventListener('click', () => {
+                    const address = prompt('Ingresa tu dirección de wallet Solana:');
+                    if (address && address.length === 44) {
+                        publicKey = address;
+                        document.body.removeChild(walletConnectModal);
+                    } else {
+                        showNotification('Dirección inválida', 'error');
+                    }
+                });
+                
+                await new Promise(resolve => {
+                    // Simular espera para conexión
+                    setTimeout(resolve, 10000);
+                });
+                break;
+                
+            default:
+                throw new Error('Tipo de wallet no soportado');
         }
         
+        if (!publicKey) {
+            throw new Error('No se pudo obtener la clave pública');
+        }
+        
+        console.log(`Wallet conectada: ${publicKey}`);
         return publicKey;
+        
     } catch (error) {
-        console.error('Error conectando wallet:', error);
-        showNotification('Error al conectar la wallet', 'error');
+        console.error('Error detallado en conexión:', error);
+        
+        // Mensajes específicos por error
+        if (error.message.includes('user rejected')) {
+            showNotification('Conexión cancelada por el usuario', 'error');
+        } else if (error.message.includes('not detected')) {
+            showNotification(`${walletType} no está instalada`, 'error');
+            // Abrir tienda de extensiones según navegador
+            if (walletType === 'phantom') {
+                window.open('https://phantom.app/', '_blank');
+            } else if (walletType === 'solflare') {
+                window.open('https://solflare.com/', '_blank');
+            } else if (walletType === 'backpack') {
+                window.open('https://www.backpack.app/', '_blank');
+            }
+        } else {
+            showNotification(`Error: ${error.message}`, 'error');
+        }
+        
         return null;
     }
 }
@@ -381,3 +531,4 @@ window.appState = appState;
 window.connectToWallet = connectToWallet;
 
 window.showNotification = showNotification;
+
