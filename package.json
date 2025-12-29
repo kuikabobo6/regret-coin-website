@@ -1,20 +1,48 @@
 {
   "name": "regret-airdrop",
   "version": "1.0.0",
+  "description": "REGRET token airdrop application for Solana",
+  "main": "api/index.js",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "dev": "vercel dev",
+    "build": "echo 'No build step required'",
     "start": "vercel start",
     "deploy": "vercel --prod",
-    "logs": "vercel logs"
+    "logs": "vercel logs",
+    "db:init": "node scripts/init-db.js",
+    "db:migrate": "node scripts/migrate-db.js",
+    "test:endpoints": "node scripts/test-endpoints.js --url http://localhost:3000",
+    "admin:stats": "node scripts/admin-cli.js stats",
+    "admin:health": "node scripts/admin-cli.js health-check",
+    "admin:rebuild-stats": "node scripts/admin-cli.js rebuild-stats",
+    "admin:list": "node scripts/admin-cli.js list-participants",
+    "admin:export": "node scripts/admin-cli.js export-csv participants",
+    "admin:purge": "CONFIRM_PURGE=yes node scripts/admin-cli.js purge-old 30",
+    "admin:reset": "CONFIRM_RESET=yes node scripts/admin-cli.js reset-test-data"
   },
+  "keywords": [
+    "solana",
+    "airdrop",
+    "crypto",
+    "blockchain",
+    "web3"
+  ],
+  "author": "REGRET Team",
+  "license": "MIT",
   "dependencies": {
     "@vercel/postgres": "^0.5.0"
   },
   "devDependencies": {
-    "@vercel/node": "^2.0.0"
-  }
+    "@vercel/node": "^3.0.0",
+    "vercel": "^32.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-repo/regret-airdrop"
+  },
+  "homepage": "https://regret-airdrop.vercel.app"
 }

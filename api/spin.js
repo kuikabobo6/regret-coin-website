@@ -1,131 +1,205 @@
-import { db } from '@vercel/postgres';
+// api/spin.js - Wheel spin endpoint
+import { query, withTransaction, validateSolanaAddress } from './_db.js';
 
 export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed',
+      code: 'METHOD_NOT_ALLOWED'
+    });
   }
 
   try {
     const { wallet } = req.body;
 
+    // Validate required fields
     if (!wallet) {
-      return res.status(400).json({ error: 'Wallet address required' });
-    }
-
-    const client = await db.connect();
-    const today = new Date().toISOString().split('T')[0];
-
-    // Check if already spun today
-    const existingSpin = await client.sql`
-      SELECT * FROM wheel_spins 
-      WHERE wallet_address = ${wallet} 
-      AND spin_date = ${today}
-    `;
-
-    if (existingSpin.rows.length > 0) {
-      await client.release();
-      return res.status(400).json({ 
-        error: 'Already spun today. Come back tomorrow!' 
+      return res.status(400).json({
+        success: false,
+        error: 'Wallet address is required',
+        code: 'MISSING_WALLET'
       });
     }
 
-    // Get user's current tokens
-    const userResult = await client.sql`
-      SELECT tokens FROM participants WHERE wallet_address = ${wallet}
-    `;
-
-    if (userResult.rows.length === 0) {
-      await client.release();
-      return res.status(404).json({ error: 'User not found' });
+    // Validate wallet address format
+    if (!validateSolanaAddress(wallet)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid Solana wallet address format',
+        code: 'INVALID_ADDRESS'
+      });
     }
 
-    const currentTokens = userResult.rows[0].tokens || 1000;
+    // ============================================================================
+    // PRE-VALIDATION (outside transaction for speed)
+    // ============================================================================
 
-    // Determine prize (weighted probabilities)
+    // Check if wallet is registered
+    const participant = await query(
+      'SELECT tokens, last_spin FROM participants WHERE wallet_address = $1',
+      [wallet]
+    );
+
+    if (participant.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Wallet not registered. Please register first.',
+        code: 'WALLET_NOT_FOUND'
+      });
+    }
+
+    const userData = participant.rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    const lastSpinDate = userData.last_spin 
+      ? new Date(userData.last_spin).toISOString().split('T')[0] 
+      : null;
+
+    // Check if already spun today (early exit)
+    if (lastSpinDate === today) {
+      return res.status(429).json({
+        success: false,
+        error: 'Already spun today. Come back tomorrow!',
+        code: 'ALREADY_SPUN_TODAY',
+        nextSpin: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+
+    // Check in wheel_spins table for today's spin
+    const todaySpin = await query(
+      'SELECT id FROM wheel_spins WHERE wallet_address = $1 AND spin_date = CURRENT_DATE',
+      [wallet]
+    );
+
+    if (todaySpin.rows.length > 0) {
+      return res.status(429).json({
+        success: false,
+        error: 'Already spun today. Come back tomorrow!',
+        code: 'ALREADY_SPUN_TODAY',
+        nextSpin: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+
+    // ============================================================================
+    // PRIZE SELECTION (outside transaction - no DB access)
+    // ============================================================================
+
+    // Prize probabilities (weighted random)
     const prizes = [
-      { amount: 100, probability: 0.3 },   // 30%
-      { amount: 250, probability: 0.25 },  // 25%
-      { amount: 500, probability: 0.2 },   // 20%
-      { amount: 750, probability: 0.15 },  // 15%
-      { amount: 1000, probability: 0.07 }, // 7%
-      { amount: 1500, probability: 0.03 }  // 3%
+      { amount: 100, weight: 30 },   // 30% chance
+      { amount: 250, weight: 25 },   // 25% chance
+      { amount: 500, weight: 20 },   // 20% chance
+      { amount: 750, weight: 15 },   // 15% chance
+      { amount: 1000, weight: 8 },   // 8% chance
+      { amount: 1500, weight: 2 }    // 2% chance
     ];
 
-    let random = Math.random();
-    let prizeAmount = 100;
-    
+    // Weighted random selection
+    const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
+    let random = Math.random() * totalWeight;
+    let selectedPrize = prizes[0];
+
     for (const prize of prizes) {
-      if (random < prize.probability) {
-        prizeAmount = prize.amount;
+      random -= prize.weight;
+      if (random <= 0) {
+        selectedPrize = prize;
         break;
       }
-      random -= prize.probability;
     }
 
-    const totalTokens = currentTokens + prizeAmount;
+    const prizeAmount = selectedPrize.amount;
 
-    // Update user tokens
-    await client.sql`
-      UPDATE participants 
-      SET tokens = ${totalTokens},
-          total_spins = total_spins + 1,
-          last_spin = NOW(),
-          last_active = NOW()
-      WHERE wallet_address = ${wallet}
-    `;
+    // ============================================================================
+    // ATOMIC TRANSACTION (all DB operations here)
+    // ============================================================================
 
-    // Record spin
-    await client.sql`
-      INSERT INTO wheel_spins (wallet_address, prize_amount, spin_date)
-      VALUES (${wallet}, ${prizeAmount}, ${today})
-    `;
+    const result = await withTransaction(async (client) => {
+      // Record the spin with unique constraint handling
+      try {
+        await client.query(
+          'INSERT INTO wheel_spins (wallet_address, prize_amount, spin_date) VALUES ($1, $2, CURRENT_DATE)',
+          [wallet, prizeAmount]
+        );
+      } catch (spinError) {
+        // Unique constraint violation - someone spun between our checks
+        if (spinError.code === '23505') {
+          throw new Error('DUPLICATE_SPIN');
+        }
+        throw spinError;
+      }
 
-    // Update global tokens
-    await client.sql`
-      UPDATE global_stats 
-      SET tokens_reserved = tokens_reserved + ${prizeAmount}
-      WHERE id = 1
-    `;
+      // Update participant tokens and spin count (atomically)
+      await client.query(
+        `UPDATE participants
+         SET tokens = tokens + $1,
+             total_spins = total_spins + 1,
+             last_spin = CURRENT_DATE,
+             last_active = NOW()
+         WHERE wallet_address = $2`,
+        [prizeAmount, wallet]
+      );
 
-    await client.release();
+      // Update global stats
+      await client.query(
+        `UPDATE global_stats
+         SET total_spins = total_spins + 1,
+             updated_at = NOW()
+         WHERE id = 1`,
+        []
+      );
 
-    // Map prize to color
-    const colorMap = {
-      100: '#4A90E2',
-      250: '#00CC88',
-      500: '#FFD166',
-      750: '#9D4EDD',
-      1000: '#FF6B6B',
-      1500: '#4ECDC4'
-    };
+      return { prizeAmount, newTokens: userData.tokens + prizeAmount };
+    });
 
-    res.status(200).json({
+    console.log(`🎰 Spin successful: ${wallet.substring(0, 8)}... won ${result.prizeAmount} $REGRET`);
+
+    return res.status(200).json({
       success: true,
       data: {
-        prize: prizeAmount,
-        color: colorMap[prizeAmount] || '#4A90E2',
-        totalTokens,
-        message: `You won ${prizeAmount} $REGRET!`,
-        spinDate: today
+        prize: result.prizeAmount,
+        newBalance: result.newTokens,
+        message: `¡Felicitaciones! Ganaste ${result.prizeAmount} $REGRET`,
+        nextSpin: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       }
     });
 
   } catch (error) {
-    console.error('Spin API error:', error);
-    
-    // Fallback: Return mock spin
-    const prizes = [100, 250, 500, 750, 1000, 1500];
-    const prizeAmount = prizes[Math.floor(Math.random() * prizes.length)];
-    
-    res.status(200).json({
-      success: true,
-      data: {
-        prize: prizeAmount,
-        color: '#4A90E2',
-        totalTokens: 1000 + prizeAmount,
-        message: `You won ${prizeAmount} $REGRET! (Fallback)`,
-        fallback: true
-      }
+    console.error('Spin error:', {
+      error: error.message,
+      code: error.code,
+      wallet: req.body?.wallet?.substring(0, 8) + '...'
+    });
+
+    // Handle specific errors
+    if (error.message === 'DUPLICATE_SPIN' || error.code === '23505') {
+      return res.status(429).json({
+        success: false,
+        error: 'Already spun today (race condition detected)',
+        code: 'ALREADY_SPUN_TODAY'
+      });
+    }
+
+    if (error.code === '25P02') { // Transaction aborted
+      return res.status(500).json({
+        success: false,
+        error: 'Transaction failed - database might be unavailable',
+        code: 'TRANSACTION_FAILED'
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      code: 'INTERNAL_ERROR'
     });
   }
 }

@@ -297,8 +297,21 @@ header {
 
 .wallet-option.selected {
     border-color: var(--primary);
-    background: rgba(74, 144, 226, 0.1);
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(0, 204, 136, 0.1));
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3), 0 4px 12px rgba(74, 144, 226, 0.2);
+    transform: scale(1.02);
+    animation: selectedPulse 0.3s ease-out;
+}
+
+.wallet-option.selected .wallet-icon {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+}
+
+.wallet-option.selected .wallet-name {
+    color: var(--primary);
+    font-weight: 700;
 }
 
 .wallet-icon {
