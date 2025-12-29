@@ -5,60 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>$REGRET - Terapia Crypto que Paga | Airdrop Solana</title>
     
-    <!-- SEO y Metadatos -->
     <meta name="description" content="Airdrop gratuito de $REGRET token en Solana. Conecta tu wallet y reclama 1,000 $REGRET gratis + ruleta diaria + sistema de referidos.">
-    <meta name="keywords" content="Solana, crypto, airdrop, token, $REGRET, wallet, phantom, solflare, backpack, free tokens">
-    <meta name="author" content="Regret Airdrop">
-    <meta name="theme-color" content="#4A90E2">
     
-    <!-- Open Graph -->
-    <meta property="og:title" content="$REGRET - Terapia Crypto que Paga">
-    <meta property="og:description" content="Conecta tu wallet y reclama 1,000 $REGRET gratis + ruleta diaria + referidos.">
-    <meta property="og:image" content="https://regretairdrop.com/preview.jpg">
-    <meta property="og:url" content="https://regretairdrop.com">
-    <meta property="og:type" content="website">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="$REGRET Airdrop - Free Tokens">
-    <meta name="twitter:description" content="Get free $REGRET tokens on Solana">
-    
-    <!-- Fuentes y Iconos -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Estilos -->
     <link rel="stylesheet" href="style.css">
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😭</text></svg>">
-    
-    <!-- Detección de Wallets -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(() => {
-            const updateStatus = (id, isAvailable) => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.classList.toggle('available', isAvailable);
-                    el.classList.toggle('unavailable', !isAvailable);
-                }
-            };
-            
-            updateStatus('phantomStatus', window.solana?.isPhantom);
-            updateStatus('solflareStatus', window.solflare && 
-                (window.solflare.isSolflare || typeof window.solflare.connect === 'function'));
-            updateStatus('backpackStatus', window.backpack && 
-                (window.backpack.isBackpack || typeof window.backpack.connect === 'function'));
-        }, 1000);
-    });
-    </script>
 </head>
 <body>
-    <!-- Contenedores especiales -->
-    <div id="confettiContainer"></div>
     <div id="notification" class="notification">
         <span id="notificationText"></span>
     </div>
@@ -78,9 +37,6 @@
                     </a>
                     <a href="https://t.me/REGRETCOINSOL2" target="_blank" class="social-btn">
                         <i class="fab fa-telegram"></i> Telegram
-                    </a>
-                    <a href="wallet-help.html" class="social-btn" style="background: rgba(255,209,102,0.1);">
-                        <i class="fas fa-question-circle"></i> Ayuda
                     </a>
                 </div>
             </div>
@@ -103,14 +59,10 @@
                     </div>
                     
                     <!-- Detalles extra -->
-                    <div class="wallet-details" id="walletDetails" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div class="wallet-details" id="walletDetails" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
                         <div class="detail-row">
                             <span class="detail-label">Tokens:</span>
                             <span class="detail-value" id="userTokens">1,000 $REGRET</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Nivel:</span>
-                            <span class="detail-value">Novato</span>
                         </div>
                         <div class="detail-row">
                             <span class="detail-label">Referidos:</span>
@@ -121,7 +73,7 @@
 
                 <!-- Selector de Wallet -->
                 <div class="wallet-connect-container" id="walletConnectContainer">
-                    <h3 class="section-subtitle" style="text-align: center; margin-bottom: 20px; color: var(--text-light);">
+                    <h3 class="section-subtitle" style="text-align: center; margin-bottom: 20px; color: #cccccc;">
                         <i class="fas fa-wallet"></i> Selecciona tu Wallet
                     </h3>
                     
@@ -152,10 +104,9 @@
                             </div>
                             <div class="wallet-status-indicator" id="backpackStatus"></div>
                         </div>
-                        
                     </div>
                     
-                    <!-- Botón de Conexión - MÁS PEQUEÑO -->
+                    <!-- Botón de Conexión -->
                     <div class="connect-btn-container">
                         <button class="connect-main" id="connectBtn" disabled>
                             <i class="fas fa-plug"></i> CONECTAR WALLET
@@ -178,8 +129,7 @@
                 </h1>
                 <p class="hero-subtitle">
                     $REGRET es el primer token de terapia grupal en Solana. 
-                    Conecta tu wallet, reclama tu airdrop inicial, y comienza a ganar tokens 
-                    por compartir tu experiencia. <strong>Lanzamiento: 12 de Enero</strong>.
+                    Conecta tu wallet, reclama tu airdrop inicial, y comienza a ganar tokens.
                 </p>
             </section>
 
@@ -215,22 +165,6 @@
                     </div>
                 </div>
 
-                <!-- Límite de Airdrop -->
-                <div id="airdropLimit" class="limit-warning" style="display: none;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span id="limitText"></span>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <small id="remainingSlots"></small>
-                </div>
-
-                <!-- Nota Importante -->
-                <div class="airdrop-note">
-                    <h4><i class="fas fa-info-circle"></i> IMPORTANTE</h4>
-                    <p>El token $REGRET se lanzará el 12 de Enero. Todas las wallets registradas recibirán automáticamente sus tokens. Guardaremos tu dirección de forma segura para la distribución.</p>
-                </div>
-
                 <!-- Estadísticas -->
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -239,9 +173,6 @@
                         </div>
                         <div class="stat-number" id="totalParticipants">1,875</div>
                         <div class="stat-label">Wallets Registradas</div>
-                        <div class="stat-trend" id="participantsTrend">
-                            <i class="fas fa-arrow-up"></i> <span>+42 hoy</span>
-                        </div>
                     </div>
                     
                     <div class="stat-card">
@@ -250,12 +181,6 @@
                         </div>
                         <div class="stat-number" id="tokensReserved">3.8M</div>
                         <div class="stat-label">Tokens Reservados</div>
-                        <div class="stat-progress">
-                            <div class="progress-bar-small">
-                                <div class="progress-fill-small" id="reservedProgress"></div>
-                            </div>
-                            <span id="reservedPercentage">38%</span>
-                        </div>
                     </div>
                     
                     <div class="stat-card">
@@ -264,9 +189,6 @@
                         </div>
                         <div class="stat-number" id="daysToLaunch">14</div>
                         <div class="stat-label">Días Restantes</div>
-                        <div class="stat-countdown">
-                            <i class="fas fa-clock"></i> <span>12 de Enero</span>
-                        </div>
                     </div>
                     
                     <div class="stat-card">
@@ -275,52 +197,6 @@
                         </div>
                         <div class="stat-number" id="tokensRemaining">6.1M</div>
                         <div class="stat-label">Tokens Disponibles</div>
-                        <div class="stat-info" id="tokensInfo">de 10M total</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Gamificación -->
-            <section class="gamification">
-                <h2 class="section-title">
-                    <i class="fas fa-trophy"></i> Sube de Nivel, Gana Más
-                </h2>
-                <p class="section-subtitle">
-                    Tu nivel determina cuántos tokens recibirás al lanzamiento
-                </p>
-                
-                <div class="levels-grid">
-                    <div class="level-card">
-                        <div class="level-badge">NIVEL 1</div>
-                        <div class="level-emoji">😥</div>
-                        <h3>Regret Novato</h3>
-                        <p>Conectaste tu wallet y reclamaste los tokens base.</p>
-                        <div class="level-reward">
-                            <strong>Recompensa:</strong>
-                            <div class="reward-amount">1,000 $REGRET</div>
-                        </div>
-                    </div>
-                    
-                    <div class="level-card highlight">
-                        <div class="level-badge">NIVEL 2</div>
-                        <div class="level-emoji">😭</div>
-                        <h3>Regret Pro</h3>
-                        <p>Giras la ruleta diaria y compartes tu código de referido.</p>
-                        <div class="level-reward">
-                            <strong>Recompensa:</strong>
-                            <div class="reward-amount">5,000 - 15,000 $REGRET</div>
-                        </div>
-                    </div>
-                    
-                    <div class="level-card premium">
-                        <div class="level-badge">NIVEL 3</div>
-                        <div class="level-emoji">🤧</div>
-                        <h3>Regret Therapist</h3>
-                        <p>Traes 5+ amigos y ayudas a crecer la comunidad.</p>
-                        <div class="level-reward">
-                            <strong>Recompensa:</strong>
-                            <div class="reward-amount">15,000 - 50,000 $REGRET</div>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -435,16 +311,6 @@
                         <div class="stat-label">Ganancias Totales</div>
                     </div>
                 </div>
-                
-                <div class="referral-share">
-                    <p>Comparte este enlace:</p>
-                    <div class="share-link">
-                        <input type="text" id="shareLink" readonly value="https://regretairdrop.com?ref=TUCODIGO">
-                        <button onclick="copyShareLink()">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                    </div>
-                </div>
             </section>
         </main>
 
@@ -452,8 +318,7 @@
         <footer>
             <div class="disclaimer">
                 <h4><i class="fas fa-exclamation-triangle"></i> INFORMACIÓN IMPORTANTE</h4>
-                <p><strong>$REGRET es un token meme experimental.</strong> El airdrop registra tu wallet para recibir tokens cuando se lance el token en Solana. No es una inversión. Los tokens no tienen valor garantizado. Solo participa si comprendes los riesgos asociados con los criptoactivos.</p>
-                <p style="margin-top: 10px; font-size: 0.9em;">Los tokens serán distribuidos automáticamente a todas las wallets registradas el día del lanzamiento.</p>
+                <p><strong>$REGRET es un token meme experimental.</strong> El airdrop registra tu wallet para recibir tokens cuando se lance el token en Solana. No es una inversión.</p>
             </div>
             
             <div class="footer-content">
@@ -463,14 +328,12 @@
                 </div>
                 
                 <div class="footer-links">
-                    <a href="wallet-help.html"><i class="fas fa-question-circle"></i> Ayuda</a>
                     <a href="https://x.com/RegretCoinSol2" target="_blank"><i class="fab fa-twitter"></i> Twitter</a>
                     <a href="https://t.me/REGRETCOINSOL2" target="_blank"><i class="fab fa-telegram"></i> Telegram</a>
                 </div>
                 
                 <div class="footer-info">
-                    <p>© 2024 $REGRET Airdrop | Lanzamiento: 12 de Enero</p>
-                    <p class="footer-note">Este es un proyecto experimental. Participa bajo tu propio riesgo.</p>
+                    <p>© 2024 $REGRET Airdrop</p>
                 </div>
             </div>
         </footer>
@@ -478,27 +341,6 @@
 
     <!-- Scripts -->
     <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-    <script src="script.js"></script>
-    
-    <!-- Debug Helper -->
-    <script>
-    // Función para debug en consola
-    window.debugInfo = function() {
-        console.log('=== DEBUG INFO ===');
-        console.log('LocalStorage wallet:', localStorage.getItem('regret_wallet'));
-        console.log('Wallet conectada:', window.AppState?.walletConnected);
-        console.log('Dirección:', window.AppState?.walletAddress);
-        console.log('Datos usuario:', window.AppState?.userData);
-        console.log('==================');
-    };
-    
-    // Copiar link de share
-    function copyShareLink() {
-        const input = document.getElementById('shareLink');
-        input.select();
-        document.execCommand('copy');
-        UI?.showNotification('Enlace copiado', 'success');
-    }
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>

@@ -2,14 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.js",
-      "use": "@vercel/node",
-      "config": { 
-        "maxLambdaSize": "15mb",
-        "includeFiles": ["api/**"]
-      }
-    },
-    {
       "src": "*.html",
       "use": "@vercel/static"
     },
@@ -24,30 +16,19 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, Origin, Authorization",
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      }
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html",
-      "headers": {
-        "Cache-Control": "public, max-age=0, must-revalidate"
-      }
+      "dest": "/index.html"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 10,
-      "memory": 1024
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; script-src 'self' https://unpkg.com https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.mainnet-beta.solana.com https://phantom.app"
+        }
+      ]
     }
-  }
+  ]
 }
