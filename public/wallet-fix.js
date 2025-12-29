@@ -72,3 +72,25 @@ if (window.ethereum?.isMetaMask) {
         }
     };
 }
+
+// Detectar wallets automáticamente
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        console.log('🔍 Detección automática de wallets completada');
+        
+        // Verificar Phantom
+        if (window.solana && window.solana.isPhantom) {
+            console.log('✅ Phantom detectada');
+        }
+        
+        // Verificar Solflare
+        if (window.solflare) {
+            console.log('✅ Solflare detectada');
+        }
+        
+        // Verificar Backpack
+        if (window.backpack) {
+            console.log('✅ Backpack detectada');
+        }
+    }, 1000);
+});

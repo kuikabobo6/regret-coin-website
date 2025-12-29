@@ -14,7 +14,7 @@ let appState = {
     walletAddress: null,
     userData: null,
     stats: null,
-    isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    isProduction: !(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '')
 };
 
 // Mock API para desarrollo
@@ -86,7 +86,9 @@ const mockAPI = {
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Inicializando aplicación $REGRET...');
-    console.log('Modo:', appState.isProduction ? 'PRODUCCIÓN' : 'DESARROLLO');
+    console.log('URL actual:', window.location.href);
+    console.log('Hostname:', window.location.hostname);
+    console.log('Modo producción?:', appState.isProduction);
     initializeApp();
 });
 
@@ -97,7 +99,8 @@ async function initializeApp() {
         setupEventListeners();
         checkExistingConnection();
         
-        if (appState.isProduction) {
+        if (!appState.isProduction) {
+            console.log('✅ Configurando actualización periódica de stats');
             setInterval(loadStats, 30000);
         }
     } catch (error) {
@@ -127,6 +130,7 @@ async function loadStats() {
                     throw new Error(`API error: ${response.status}`);
                 }
             } catch (apiError) {
+                console.log('Usando datos predeterminados para stats:', apiError);
                 data = {
                     totalParticipants: 1875,
                     tokensReserved: 3875000,
@@ -227,8 +231,13 @@ async function connectToWallet(walletType) {
     console.log(`Conectando ${walletType}...`);
     
     try {
-        // En desarrollo, usar siempre simulación
-        if (!appState.isProduction) {
+        // Verificar si estamos en localhost usando la URL actual
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname === '';
+        
+        // En localhost, usar simulación
+        if (isLocalhost) {
             console.log('🛠️ Modo desarrollo: Simulando conexión');
             const fakeAddress = generateFakeAddress();
             showNotification(`Modo desarrollo: ${walletType} simulada`, 'info');
@@ -243,6 +252,7 @@ async function connectToWallet(walletType) {
             case 'phantom':
                 if (window.solana && window.solana.isPhantom) {
                     try {
+                        console.log('Phantom detectada, intentando conectar...');
                         const response = await window.solana.connect();
                         publicKey = response.publicKey.toString();
                         console.log(`✅ Phantom conectada: ${publicKey}`);
@@ -251,23 +261,27 @@ async function connectToWallet(walletType) {
                         console.error('Error Phantom:', error);
                     }
                 } else {
-                    errorMessage = 'Phantom no está instalada. Instala la extensión.';
+                    errorMessage = 'Phantom no está instalada. Instala la extensión desde phantom.app';
                 }
                 break;
                 
             case 'solflare':
                 if (window.solflare) {
                     try {
-                        // Intentar diferentes métodos de conexión para Solflare
+                        console.log('Solflare detectada, intentando conectar...');
                         let response;
                         
-                        // Método 1: connect()
+                        // Método 1: connect() moderno
                         if (typeof window.solflare.connect === 'function') {
                             response = await window.solflare.connect();
                         }
-                        // Método 2: request()
+                        // Método 2: request() API
                         else if (typeof window.solflare.request === 'function') {
                             response = await window.solflare.request({ method: 'connect' });
+                        }
+                        // Método 3: Versión antigua
+                        else if (window.solflare._solflareWeb3 && window.solflare._solflareWeb3.connect) {
+                            response = await window.solflare._solflareWeb3.connect();
                         }
                         
                         // Procesar respuesta
@@ -291,22 +305,28 @@ async function connectToWallet(walletType) {
                         console.error('Error Solflare:', error);
                     }
                 } else {
-                    errorMessage = 'Solflare no está instalada. Instala la extensión.';
+                    errorMessage = 'Solflare no está instalada. Instala la extensión desde solflare.com';
                 }
                 break;
                 
             case 'backpack':
                 if (window.backpack) {
                     try {
+                        console.log('Backpack detectada, intentando conectar...');
                         let response;
                         
                         // Intentar diferentes métodos
                         if (typeof window.backpack.connect === 'function') {
                             response = await window.backpack.connect();
-                        } else if (window.backpack.solana && window.backpack.solana.connect) {
+                        } 
+                        else if (window.backpack.solana && typeof window.backpack.solana.connect === 'function') {
                             response = await window.backpack.solana.connect();
-                        } else if (typeof window.backpack.request === 'function') {
+                        } 
+                        else if (typeof window.backpack.request === 'function') {
                             response = await window.backpack.request({ method: 'connect' });
+                        }
+                        else if (window.backpack._backpackWeb3 && window.backpack._backpackWeb3.connect) {
+                            response = await window.backpack._backpackWeb3.connect();
                         }
                         
                         if (response) {
@@ -329,17 +349,27 @@ async function connectToWallet(walletType) {
                         console.error('Error Backpack:', error);
                     }
                 } else {
-                    errorMessage = 'Backpack no está instalada. Instala la extensión.';
+                    errorMessage = 'Backpack no está instalada. Instala la extensión desde backpack.app';
                 }
                 break;
                 
             case 'uniswap':
-                const address = prompt('Ingresa tu dirección de wallet Solana (44 caracteres):');
-                if (address && address.length === 44 && /^[1-9A-HJ-NP-Za-km-z]{44}$/.test(address)) {
-                    publicKey = address;
-                    console.log(`✅ Dirección manual: ${publicKey}`);
-                } else {
-                    errorMessage = 'Dirección de wallet inválida';
+                try {
+                    const address = prompt('Ingresa tu dirección de wallet Solana (44 caracteres):');
+                    if (address) {
+                        const trimmedAddress = address.trim();
+                        // Validación básica de dirección Solana
+                        if (trimmedAddress.length === 44 && /^[1-9A-HJ-NP-Za-km-z]{44}$/.test(trimmedAddress)) {
+                            publicKey = trimmedAddress;
+                            console.log(`✅ Dirección manual aceptada: ${publicKey}`);
+                        } else {
+                            errorMessage = 'Dirección de wallet inválida. Las direcciones Solana tienen 44 caracteres.';
+                        }
+                    } else {
+                        errorMessage = 'Se requiere una dirección de wallet';
+                    }
+                } catch (error) {
+                    errorMessage = `Error con entrada manual: ${error.message}`;
                 }
                 break;
                 
@@ -349,18 +379,19 @@ async function connectToWallet(walletType) {
         
         // Si hubo error, mostrar notificación
         if (errorMessage) {
+            console.error(`Error conectando ${walletType}:`, errorMessage);
             showNotification(errorMessage, 'error');
             
             // Si es error de wallet no instalada, ofrecer instalarla
             if (errorMessage.includes('no está instalada')) {
                 const stores = {
-                    phantom: 'https://phantom.app/',
-                    solflare: 'https://solflare.com/',
-                    backpack: 'https://www.backpack.app/'
+                    phantom: 'https://phantom.app/download',
+                    solflare: 'https://solflare.com/download',
+                    backpack: 'https://www.backpack.app/download'
                 };
                 
                 if (stores[walletType]) {
-                    const shouldInstall = confirm(`${walletType} no está instalada. ¿Quieres ir a la página de instalación?`);
+                    const shouldInstall = confirm(`${walletType} no está instalada. ¿Quieres ir a la página de descarga?`);
                     if (shouldInstall) {
                         window.open(stores[walletType], '_blank');
                     }
@@ -371,7 +402,8 @@ async function connectToWallet(walletType) {
         }
         
         if (!publicKey) {
-            throw new Error('No se pudo obtener la dirección de la wallet');
+            showNotification('No se pudo obtener la dirección de la wallet', 'error');
+            return null;
         }
         
         return publicKey;
