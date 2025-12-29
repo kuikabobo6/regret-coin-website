@@ -1,820 +1,1797 @@
-// Configuración
-const API_BASE = '/api';
+// ============================================================================
+// CONFIGURACIÓN PROFESIONAL $REGRET AIRDROP
+// ============================================================================
+
 const CONFIG = {
     AIRDROP_BASE: 1000,
     REFERRAL_BONUS: 500,
     MAX_PARTICIPANTS: 5000,
-    TOTAL_TOKENS: 10000000
+    TOTAL_TOKENS: 10000000,
+    
+    // API Configuration for Vercel
+    API_BASE: window.location.hostname === 'localhost' || 
+              window.location.hostname === '127.0.0.1' ||
+              window.location.hostname.includes('.local') ? 
+              'http://localhost:3000/api' : '/api',
+    
+    // Network Configuration
+    NETWORK: 'mainnet-beta',
+    CLUSTER_API: 'https://api.mainnet-beta.solana.com',
+    
+    // App Settings
+    APP_VERSION: '1.0.0',
+    APP_NAME: '$REGRET Airdrop'
 };
 
-// Estado de la aplicación
-let appState = {
+// ============================================================================
+// APPLICATION STATE MANAGEMENT
+// ============================================================================
+
+const AppState = {
     selectedWallet: null,
     walletConnected: false,
     walletAddress: null,
     userData: null,
     stats: null,
-    isProduction: !(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '')
+    sessionId: generateSessionId(),
+    isProduction: window.location.hostname !== 'localhost' && 
+                  window.location.hostname !== '127.0.0.1',
+    hasSpunToday: false,
+    lastActivity: Date.now()
 };
 
-// Mock API para desarrollo
-const mockAPI = {
+// Generate unique session ID
+function generateSessionId() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// ============================================================================
+// POSTGRES API SERVICE (Vercel Integration)
+// ============================================================================
+
+const PostgresApiService = {
+    // ========== STATISTICS ==========
     async getStats() {
-        const totalParticipants = Math.floor(Math.random() * 1500) + 1000;
-        const tokensReserved = Math.floor(totalParticipants * 1000) + 
-                              Math.floor(totalParticipants * 0.3 * 500) + 
-                              Math.floor(totalParticipants * 2 * 500);
-        
-        return {
-            totalParticipants: totalParticipants,
-            tokensReserved: tokensReserved,
-            daysToLaunch: Math.max(1, Math.floor(Math.random() * 30) + 1),
-            participantsToday: Math.floor(Math.random() * 50) + 25,
-            trend: 'up'
-        };
+        try {
+            const response = await fetch(`${CONFIG.API_BASE}/stats`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': AppState.sessionId,
+                    'X-App-Version': CONFIG.APP_VERSION
+                },
+                cache: 'no-cache'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to fetch stats');
+            }
+
+            const data = await response.json();
+            
+            // Validate response
+            if (!data.success || !data.data) {
+                throw new Error('Invalid API response');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Postgres API - Stats Error:', error);
+            
+            // Fallback to mock data with local storage
+            const fallbackData = this.getFallbackStats();
+            
+            // Try to update with local data
+            try {
+                const localParticipants = localStorage.getItem('regret_local_participants');
+                if (localParticipants) {
+                    const participants = JSON.parse(localParticipants);
+                    const participantCount = Object.keys(participants).length;
+                    
+                    if (participantCount > 0) {
+                        fallbackData.data.totalParticipants = Math.max(
+                            fallbackData.data.totalParticipants,
+                            participantCount
+                        );
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not merge local data:', e);
+            }
+
+            return fallbackData;
+        }
     },
-    
+
+    // ========== WALLET REGISTRATION ==========
     async registerWallet(walletAddress, walletType) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return {
-            success: true,
-            referralCode: `REGRET-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-            tokens: 1000,
-            message: "¡Wallet registrada exitosamente!"
-        };
+        try {
+            // Validate wallet address
+            if (!this.validateSolanaAddress(walletAddress)) {
+                throw new Error('Invalid Solana wallet address');
+            }
+
+            const payload = {
+                wallet: walletAddress,
+                walletType: walletType,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                sessionId: AppState.sessionId,
+                timestamp: new Date().toISOString(),
+                utmSource: this.getUTMParameter('utm_source'),
+                utmMedium: this.getUTMParameter('utm_medium'),
+                utmCampaign: this.getUTMParameter('utm_campaign')
+            };
+
+            console.log('Registering wallet with payload:', {
+                ...payload,
+                wallet: walletAddress.substring(0, 8) + '...'
+            });
+
+            const response = await fetch(`${CONFIG.API_BASE}/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': AppState.sessionId
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                // Check if wallet already exists
+                if (responseData.error && responseData.error.includes('already exists')) {
+                    return {
+                        success: true,
+                        data: {
+                            referralCode: responseData.referralCode || this.generateReferralCode(walletAddress),
+                            tokens: responseData.tokens || CONFIG.AIRDROP_BASE,
+                            message: 'Wallet already registered',
+                            alreadyRegistered: true
+                        }
+                    };
+                }
+                throw new Error(responseData.error || 'Registration failed');
+            }
+
+            if (!responseData.success) {
+                throw new Error(responseData.error || 'Registration failed');
+            }
+
+            // Store locally for backup
+            this.storeLocalParticipant(walletAddress, walletType, responseData.data);
+
+            return responseData;
+        } catch (error) {
+            console.error('Postgres API - Register Error:', error);
+            
+            // Fallback: Generate referral code and store locally
+            const referralCode = this.generateReferralCode(walletAddress);
+            
+            this.storeLocalParticipant(walletAddress, walletType, {
+                referralCode,
+                tokens: CONFIG.AIRDROP_BASE
+            });
+
+            return {
+                success: true,
+                data: {
+                    referralCode,
+                    tokens: CONFIG.AIRDROP_BASE,
+                    message: 'Registered locally (API unavailable)',
+                    localFallback: true
+                }
+            };
+        }
     },
-    
+
+    // ========== WHEEL SPIN ==========
     async spinWheel(walletAddress) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const prizeMap = [
-            { color: '#4A90E2', amount: 100 },
-            { color: '#00CC88', amount: 250 },
-            { color: '#FFD166', amount: 500 },
-            { color: '#9D4EDD', amount: 750 },
-            { color: '#FF6B6B', amount: 1000 },
-            { color: '#4ECDC4', amount: 1500 }
-        ];
+        try {
+            // Check if already spun today (local check)
+            const lastSpinKey = `regret_last_spin_${walletAddress}`;
+            const lastSpin = localStorage.getItem(lastSpinKey);
+            
+            if (lastSpin) {
+                const lastSpinDate = new Date(lastSpin);
+                const today = new Date();
+                
+                if (lastSpinDate.toDateString() === today.toDateString()) {
+                    throw new Error('Already spun today. Come back tomorrow!');
+                }
+            }
+
+            const payload = {
+                wallet: walletAddress,
+                sessionId: AppState.sessionId,
+                timestamp: new Date().toISOString()
+            };
+
+            const response = await fetch(`${CONFIG.API_BASE}/spin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': AppState.sessionId
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Spin failed');
+            }
+
+            if (!responseData.success) {
+                throw new Error(responseData.error || 'Spin failed');
+            }
+
+            // Store spin locally
+            localStorage.setItem(lastSpinKey, new Date().toISOString());
+            
+            // Update local tokens
+            if (AppState.userData) {
+                AppState.userData.tokens = responseData.data.totalTokens;
+                this.updateLocalParticipant(walletAddress, {
+                    tokens: responseData.data.totalTokens
+                });
+            }
+
+            return responseData;
+        } catch (error) {
+            console.error('Postgres API - Spin Error:', error);
+            
+            // Fallback: Mock spin with local storage
+            const prize = this.getMockPrize();
+            const currentTokens = AppState.userData?.tokens || CONFIG.AIRDROP_BASE;
+            const totalTokens = currentTokens + prize;
+            
+            // Store locally
+            localStorage.setItem(`regret_last_spin_${walletAddress}`, new Date().toISOString());
+            
+            if (AppState.userData) {
+                AppState.userData.tokens = totalTokens;
+                this.updateLocalParticipant(walletAddress, {
+                    tokens: totalTokens
+                });
+            }
+
+            return {
+                success: true,
+                data: {
+                    prize: prize,
+                    color: this.getColorForPrize(prize),
+                    totalTokens: totalTokens,
+                    message: `You won ${prize} $REGRET! (Local Fallback)`,
+                    localFallback: true
+                }
+            };
+        }
+    },
+
+    // ========== REFERRALS ==========
+    async getReferrals(walletAddress) {
+        try {
+            const response = await fetch(`${CONFIG.API_BASE}/referrals/${walletAddress}`, {
+                headers: {
+                    'X-Session-ID': AppState.sessionId
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch referrals');
+            }
+
+            const responseData = await response.json();
+
+            if (!responseData.success) {
+                throw new Error('Invalid response');
+            }
+
+            return responseData;
+        } catch (error) {
+            console.error('Postgres API - Referrals Error:', error);
+            
+            // Fallback: Get local referrals
+            const localData = this.getLocalReferrals(walletAddress);
+            
+            return {
+                success: true,
+                data: localData,
+                localFallback: true
+            };
+        }
+    },
+
+    async addReferral(referrerWallet, referredWallet, referralCode) {
+        try {
+            const payload = {
+                referrerWallet,
+                referredWallet,
+                referralCode,
+                sessionId: AppState.sessionId,
+                timestamp: new Date().toISOString()
+            };
+
+            const response = await fetch(`${CONFIG.API_BASE}/referrals/add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': AppState.sessionId
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Failed to add referral');
+            }
+
+            return responseData;
+        } catch (error) {
+            console.error('Postgres API - Add Referral Error:', error);
+            
+            // Fallback: Store locally
+            this.storeLocalReferral(referrerWallet, referredWallet, referralCode);
+            
+            return {
+                success: true,
+                data: { message: 'Referral stored locally' },
+                localFallback: true
+            };
+        }
+    },
+
+    // ========== HELPER METHODS ==========
+    validateSolanaAddress(address) {
+        if (!address || typeof address !== 'string') return false;
         
-        const randomIndex = Math.floor(Math.random() * prizeMap.length);
-        const prize = prizeMap[randomIndex].amount;
-        const color = prizeMap[randomIndex].color;
-        const totalTokens = (appState.userData?.tokens || 1000) + prize;
+        // Basic Solana address validation
+        const trimmed = address.trim();
+        if (trimmed.length !== 44) return false;
         
+        // Solana addresses are base58 encoded
+        const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{44}$/;
+        return base58Regex.test(trimmed);
+    },
+
+    generateReferralCode(walletAddress) {
+        const prefix = 'REGRET-';
+        const hash = btoa(walletAddress).substring(0, 8).toUpperCase();
+        return prefix + hash;
+    },
+
+    getUTMParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name) || null;
+    },
+
+    getMockPrize() {
+        const prizes = [100, 250, 500, 750, 1000, 1500];
+        return prizes[Math.floor(Math.random() * prizes.length)];
+    },
+
+    getColorForPrize(prize) {
+        const colorMap = {
+            100: '#4A90E2',
+            250: '#00CC88',
+            500: '#FFD166',
+            750: '#9D4EDD',
+            1000: '#FF6B6B',
+            1500: '#4ECDC4'
+        };
+        return colorMap[prize] || '#4A90E2';
+    },
+
+    getFallbackStats() {
+        // Try to get from localStorage first
+        try {
+            const localData = localStorage.getItem('regret_stats');
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                if (parsed.timestamp && Date.now() - new Date(parsed.timestamp).getTime() < 3600000) {
+                    return {
+                        success: true,
+                        data: parsed.data
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn('Could not parse local stats:', e);
+        }
+
+        // Generate mock stats
+        const totalParticipants = Math.floor(Math.random() * 1500) + 1000;
+        const tokensReserved = totalParticipants * CONFIG.AIRDROP_BASE + 
+                             Math.floor(totalParticipants * 0.3) * CONFIG.REFERRAL_BONUS;
+
         return {
             success: true,
-            prize: prize,
-            color: color,
-            totalTokens: totalTokens,
-            message: `¡Ganaste ${prize} $REGRET!`
+            data: {
+                totalParticipants,
+                tokensReserved,
+                daysToLaunch: Math.max(1, Math.floor(Math.random() * 30) + 1),
+                participantsToday: Math.floor(Math.random() * 50) + 25,
+                trend: 'up',
+                timestamp: new Date().toISOString()
+            }
         };
     },
-    
-    async getReferrals(walletAddress) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        return {
-            referralCount: Math.floor(Math.random() * 10),
-            referrals: Array.from({length: 5}, (_, i) => ({
-                id: i + 1,
-                wallet: `SOL${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-                date: new Date(Date.now() - Math.random() * 86400000 * 7).toISOString().split('T')[0]
-            })),
-            totalEarned: Math.floor(Math.random() * 5000)
-        };
+
+    storeLocalParticipant(walletAddress, walletType, data) {
+        try {
+            const participants = JSON.parse(localStorage.getItem('regret_local_participants') || '{}');
+            participants[walletAddress] = {
+                walletType,
+                referralCode: data.referralCode,
+                tokens: data.tokens || CONFIG.AIRDROP_BASE,
+                registeredAt: new Date().toISOString(),
+                lastActive: new Date().toISOString()
+            };
+            localStorage.setItem('regret_local_participants', JSON.stringify(participants));
+            
+            // Update stats
+            this.updateLocalStats();
+        } catch (error) {
+            console.error('Error storing local participant:', error);
+        }
+    },
+
+    updateLocalParticipant(walletAddress, updates) {
+        try {
+            const participants = JSON.parse(localStorage.getItem('regret_local_participants') || '{}');
+            if (participants[walletAddress]) {
+                participants[walletAddress] = {
+                    ...participants[walletAddress],
+                    ...updates,
+                    lastActive: new Date().toISOString()
+                };
+                localStorage.setItem('regret_local_participants', JSON.stringify(participants));
+            }
+        } catch (error) {
+            console.error('Error updating local participant:', error);
+        }
+    },
+
+    getLocalReferrals(walletAddress) {
+        try {
+            const referrals = JSON.parse(localStorage.getItem('regret_local_referrals') || '{}');
+            const userReferrals = referrals[walletAddress] || [];
+            
+            return {
+                referralCount: userReferrals.length,
+                referrals: userReferrals,
+                totalEarned: userReferrals.length * CONFIG.REFERRAL_BONUS
+            };
+        } catch (error) {
+            console.error('Error getting local referrals:', error);
+            return {
+                referralCount: 0,
+                referrals: [],
+                totalEarned: 0
+            };
+        }
+    },
+
+    storeLocalReferral(referrerWallet, referredWallet, referralCode) {
+        try {
+            const referrals = JSON.parse(localStorage.getItem('regret_local_referrals') || '{}');
+            
+            if (!referrals[referrerWallet]) {
+                referrals[referrerWallet] = [];
+            }
+            
+            referrals[referrerWallet].push({
+                wallet: referredWallet,
+                referralCode,
+                date: new Date().toISOString().split('T')[0]
+            });
+            
+            localStorage.setItem('regret_local_referrals', JSON.stringify(referrals));
+            
+            // Update referrer's token count
+            this.updateLocalParticipant(referrerWallet, {
+                referralCount: referrals[referrerWallet].length,
+                tokens: (AppState.userData?.tokens || CONFIG.AIRDROP_BASE) + CONFIG.REFERRAL_BONUS
+            });
+        } catch (error) {
+            console.error('Error storing local referral:', error);
+        }
+    },
+
+    updateLocalStats() {
+        try {
+            const participants = JSON.parse(localStorage.getItem('regret_local_participants') || '{}');
+            const totalParticipants = Object.keys(participants).length;
+            let totalTokens = 0;
+            
+            Object.values(participants).forEach(participant => {
+                totalTokens += participant.tokens || 0;
+            });
+            
+            const stats = {
+                data: {
+                    totalParticipants,
+                    tokensReserved: totalTokens,
+                    daysToLaunch: 14,
+                    participantsToday: Math.floor(Math.random() * 20) + 5,
+                    trend: 'up',
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            localStorage.setItem('regret_stats', JSON.stringify(stats));
+        } catch (error) {
+            console.error('Error updating local stats:', error);
+        }
+    },
+
+    // ========== ANALYTICS ==========
+    async trackEvent(eventName, eventData = {}) {
+        try {
+            const payload = {
+                event: eventName,
+                sessionId: AppState.sessionId,
+                walletAddress: AppState.walletAddress,
+                timestamp: new Date().toISOString(),
+                ...eventData
+            };
+
+            // Send to analytics endpoint if available
+            await fetch(`${CONFIG.API_BASE}/analytics`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).catch(() => {
+                // Silently fail if analytics endpoint is not available
+            });
+        } catch (error) {
+            // Analytics errors shouldn't break the app
+            console.debug('Analytics error:', error);
+        }
     }
 };
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Inicializando aplicación $REGRET...');
-    console.log('URL actual:', window.location.href);
-    console.log('Hostname:', window.location.hostname);
-    console.log('Modo producción?:', appState.isProduction);
-    initializeApp();
-});
+// ============================================================================
+// WALLET SERVICE (Enhanced for Production)
+// ============================================================================
 
-// Inicializar aplicación
-async function initializeApp() {
-    try {
-        await loadStats();
-        setupEventListeners();
-        checkExistingConnection();
+const WalletService = {
+    async connect(walletType) {
+        console.log(`🔗 Connecting to ${walletType}...`);
         
-        if (!appState.isProduction) {
-            console.log('✅ Configurando actualización periódica de stats');
-            setInterval(loadStats, 30000);
-        }
-    } catch (error) {
-        console.error('Error inicializando aplicación:', error);
-        showNotification('Error cargando la aplicación', 'error');
-    }
-}
-
-// Cargar estadísticas
-async function loadStats() {
-    try {
-        let data;
-        
-        if (appState.isProduction) {
-            try {
-                const response = await fetch(`${API_BASE}/stats`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
-                if (response.ok) {
-                    data = await response.json();
-                } else {
-                    throw new Error(`API error: ${response.status}`);
-                }
-            } catch (apiError) {
-                console.log('Usando datos predeterminados para stats:', apiError);
-                data = {
-                    totalParticipants: 1875,
-                    tokensReserved: 3875000,
-                    daysToLaunch: 14,
-                    participantsToday: 42,
-                    trend: 'up'
-                };
+        try {
+            let publicKey = null;
+            let connectionMethod = '';
+            
+            switch(walletType) {
+                case 'phantom':
+                    const phantomResult = await this.connectPhantom();
+                    publicKey = phantomResult.publicKey;
+                    connectionMethod = phantomResult.method;
+                    break;
+                    
+                case 'solflare':
+                    const solflareResult = await this.connectSolflare();
+                    publicKey = solflareResult.publicKey;
+                    connectionMethod = solflareResult.method;
+                    break;
+                    
+                case 'backpack':
+                    const backpackResult = await this.connectBackpack();
+                    publicKey = backpackResult.publicKey;
+                    connectionMethod = backpackResult.method;
+                    break;
+                    
+                case 'manual':
+                    publicKey = await this.connectManual();
+                    connectionMethod = 'manual_input';
+                    break;
+                    
+                default:
+                    throw new Error(`Unsupported wallet type: ${walletType}`);
             }
-        } else {
-            data = await mockAPI.getStats();
+
+            if (!publicKey) {
+                throw new Error('Could not retrieve public key');
+            }
+
+            // Validate the address
+            if (!PostgresApiService.validateSolanaAddress(publicKey)) {
+                throw new Error('Invalid Solana address received');
+            }
+
+            console.log(`✅ ${walletType} connected successfully`);
+            console.log(`   Address: ${publicKey.substring(0, 8)}...${publicKey.substring(publicKey.length - 8)}`);
+            console.log(`   Method: ${connectionMethod}`);
+            
+            // Track connection event
+            await PostgresApiService.trackEvent('wallet_connected', {
+                walletType,
+                connectionMethod,
+                addressHash: this.hashAddress(publicKey)
+            });
+
+            return publicKey;
+        } catch (error) {
+            console.error(`❌ ${walletType} connection failed:`, error);
+            
+            await PostgresApiService.trackEvent('wallet_connection_failed', {
+                walletType,
+                error: error.message
+            });
+            
+            this.handleWalletError(walletType, error);
+            return null;
+        }
+    },
+
+    async connectPhantom() {
+        if (!window.solana?.isPhantom) {
+            throw new Error('Phantom wallet not detected. Please install the Phantom extension.');
+        }
+
+        try {
+            // Try different connection methods
+            let response;
+            let method = 'default';
+            
+            // Method 1: Standard connect
+            if (typeof window.solana.connect === 'function') {
+                response = await window.solana.connect();
+                method = 'connect';
+            }
+            // Method 2: Request method
+            else if (typeof window.solana.request === 'function') {
+                response = await window.solana.request({ method: 'connect' });
+                method = 'request';
+            }
+            // Method 3: Legacy method
+            else if (window.solana._phantom && window.solana._phantom.connect) {
+                response = await window.solana._phantom.connect();
+                method = 'legacy';
+            } else {
+                throw new Error('Phantom connection method not available');
+            }
+
+            if (!response || !response.publicKey) {
+                throw new Error('No public key received from Phantom');
+            }
+
+            return {
+                publicKey: response.publicKey.toString(),
+                method
+            };
+        } catch (error) {
+            if (error.code === 4001) {
+                throw new Error('Connection request was rejected by user');
+            }
+            throw error;
+        }
+    },
+
+    async connectSolflare() {
+        if (!window.solflare) {
+            throw new Error('Solflare wallet not detected. Please install the Solflare extension.');
+        }
+
+        try {
+            let response;
+            let method = 'default';
+            
+            // Try different Solflare connection methods
+            if (typeof window.solflare.connect === 'function') {
+                response = await window.solflare.connect();
+                method = 'connect';
+            } else if (typeof window.solflare.request === 'function') {
+                response = await window.solflare.request({ method: 'connect' });
+                method = 'request';
+            } else if (window.solflare.isSolflare) {
+                // Modern Solflare
+                response = await window.solflare.connect();
+                method = 'modern';
+            } else {
+                throw new Error('Solflare connection method not available');
+            }
+
+            return {
+                publicKey: this.extractPublicKey(response),
+                method
+            };
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    async connectBackpack() {
+        if (!window.backpack) {
+            throw new Error('Backpack wallet not detected. Please install the Backpack extension.');
+        }
+
+        try {
+            let response;
+            let method = 'default';
+            
+            if (typeof window.backpack.connect === 'function') {
+                response = await window.backpack.connect();
+                method = 'connect';
+            } else if (window.backpack.solana?.connect) {
+                response = await window.backpack.solana.connect();
+                method = 'solana_api';
+            } else if (typeof window.backpack.request === 'function') {
+                response = await window.backpack.request({ method: 'connect' });
+                method = 'request';
+            } else {
+                throw new Error('Backpack connection method not available');
+            }
+
+            return {
+                publicKey: this.extractPublicKey(response),
+                method
+            };
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    async connectManual() {
+        return new Promise((resolve, reject) => {
+            // Create a professional-looking modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: var(--dark-bg);
+                padding: 30px;
+                border-radius: 15px;
+                border: 1px solid var(--border-color);
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            `;
+            
+            modalContent.innerHTML = `
+                <h3 style="margin-bottom: 15px; color: var(--accent);">
+                    <i class="fas fa-key"></i> Enter Solana Wallet Address
+                </h3>
+                <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">
+                    Please enter your 44-character Solana wallet address.
+                    This will be stored securely for token distribution.
+                </p>
+                <input type="text" id="manualWalletInput" 
+                       placeholder="So1ABC123...XYZ" 
+                       style="width: 100%; padding: 12px; margin-bottom: 15px;
+                              background: rgba(255,255,255,0.1); border: 1px solid var(--border-color);
+                              border-radius: 8px; color: white; font-family: monospace;">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="cancelManual" style="padding: 10px 20px; background: rgba(255,255,255,0.1);
+                            border: 1px solid var(--border-color); border-radius: 8px; color: white; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="submitManual" style="padding: 10px 30px; background: var(--primary);
+                            border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold;">
+                        Connect
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            const input = modalContent.querySelector('#manualWalletInput');
+            const cancelBtn = modalContent.querySelector('#cancelManual');
+            const submitBtn = modalContent.querySelector('#submitManual');
+            
+            input.focus();
+            
+            cancelBtn.onclick = () => {
+                document.body.removeChild(modal);
+                reject(new Error('Manual connection cancelled'));
+            };
+            
+            submitBtn.onclick = () => {
+                const address = input.value.trim();
+                
+                if (!address) {
+                    alert('Please enter a wallet address');
+                    return;
+                }
+                
+                if (!PostgresApiService.validateSolanaAddress(address)) {
+                    alert('Invalid Solana address. Please enter a valid 44-character address.');
+                    return;
+                }
+                
+                document.body.removeChild(modal);
+                resolve(address);
+            };
+            
+            // Allow Enter key to submit
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    submitBtn.click();
+                }
+            };
+            
+            // Close on Escape
+            modal.onkeydown = (e) => {
+                if (e.key === 'Escape') {
+                    cancelBtn.click();
+                }
+            };
+            
+            // Close on background click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    cancelBtn.click();
+                }
+            };
+        });
+    },
+
+    extractPublicKey(response) {
+        if (!response) return null;
+        
+        if (response.publicKey) {
+            return response.publicKey.toString();
+        }
+        if (typeof response === 'string' && response.length === 44) {
+            return response;
+        }
+        if (Array.isArray(response) && response.length > 0) {
+            return response[0];
+        }
+        if (response.result && response.result.publicKey) {
+            return response.result.publicKey.toString();
         }
         
-        appState.stats = data;
-        updateStatsUI();
+        return null;
+    },
+
+    hashAddress(address) {
+        // Simple hash for analytics (not reversible)
+        let hash = 0;
+        for (let i = 0; i < address.length; i++) {
+            const char = address.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString(16);
+    },
+
+    handleWalletError(walletType, error) {
+        let message = error.message || 'Unknown connection error';
         
-    } catch (error) {
-        console.error('Error cargando estadísticas:', error);
-        appState.stats = {
-            totalParticipants: 1875,
-            tokensReserved: 3875000,
-            daysToLaunch: 14,
-            participantsToday: 32,
-            trend: 'up'
+        // User-friendly error messages
+        const errorMessages = {
+            'not detected': `Please install the ${walletType} extension.`,
+            'rejected': 'Connection request was cancelled.',
+            'already processing': 'Another connection request is in progress.',
+            'invalid': 'Invalid wallet address provided.',
+            'unavailable': 'Wallet is not available or not unlocked.',
+            'network': 'Network error. Please check your connection.'
         };
-        updateStatsUI();
-    }
-}
-
-// Actualizar UI de estadísticas
-function updateStatsUI() {
-    if (appState.stats) {
-        const participants = appState.stats.totalParticipants || 0;
-        const tokensReserved = appState.stats.tokensReserved || 0;
-        const daysToLaunch = appState.stats.daysToLaunch || 14;
-        const participantsToday = appState.stats.participantsToday || 0;
-        const trend = appState.stats.trend || 'up';
-
-        document.getElementById('totalParticipants').textContent = formatNumber(participants);
         
+        for (const [key, friendlyMessage] of Object.entries(errorMessages)) {
+            if (message.toLowerCase().includes(key)) {
+                message = friendlyMessage;
+                break;
+            }
+        }
+        
+        UI.showNotification(`❌ ${message}`, 'error');
+        
+        // Offer installation link for missing wallets
+        if (message.includes('install')) {
+            this.offerInstallation(walletType);
+        }
+    },
+
+    offerInstallation(walletType) {
+        const installLinks = {
+            phantom: 'https://phantom.app/download',
+            solflare: 'https://solflare.com/download',
+            backpack: 'https://backpack.app/download'
+        };
+        
+        if (installLinks[walletType]) {
+            setTimeout(() => {
+                if (confirm(`Would you like to install ${walletType} now?`)) {
+                    window.open(installLinks[walletType], '_blank', 'noopener,noreferrer');
+                }
+            }, 1500);
+        }
+    }
+};
+
+// ============================================================================
+// UI SERVICE (Professional Interface)
+// ============================================================================
+
+const UI = {
+    // ========== NOTIFICATIONS ==========
+    showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+        
+        if (!notification || !notificationText) return;
+        
+        // Clear previous notifications
+        notification.className = 'notification';
+        
+        // Set content
+        notificationText.innerHTML = this.getNotificationIcon(type) + ' ' + message;
+        notification.classList.add('show', type);
+        
+        // Auto-dismiss
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, type === 'error' ? 6000 : 4000);
+    },
+    
+    getNotificationIcon(type) {
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+        return icons[type] || 'ℹ️';
+    },
+    
+    // ========== STATS DISPLAY ==========
+    updateStats(data) {
+        if (!data) return;
+        
+        const participants = data.totalParticipants || 0;
+        const tokensReserved = data.tokensReserved || 0;
+        const daysToLaunch = data.daysToLaunch || 14;
+        const participantsToday = data.participantsToday || 0;
+        const trend = data.trend || 'up';
+        
+        // Update counters with animation
+        this.animateCounter('totalParticipants', participants);
+        this.animateCounter('tokensReserved', tokensReserved);
+        this.animateCounter('tokensRemaining', CONFIG.TOTAL_TOKENS - tokensReserved);
+        
+        document.getElementById('daysToLaunch').textContent = daysToLaunch;
+        
+        // Update trend
         const trendElement = document.getElementById('participantsTrend');
         if (trendElement) {
-            trendElement.innerHTML = `<i class="fas fa-arrow-up"></i> <span>+${participantsToday} hoy</span>`;
+            const trendIcon = trend === 'up' ? '↗️' : '↘️';
+            trendElement.innerHTML = `${trendIcon} <span>+${participantsToday} today</span>`;
         }
-
-        document.getElementById('tokensReserved').textContent = formatNumber(tokensReserved);
         
+        // Update progress bars
         const reservedPercentage = Math.min((tokensReserved / CONFIG.TOTAL_TOKENS) * 100, 100);
-        const reservedProgress = document.getElementById('reservedProgress');
-        const reservedPercentageElement = document.getElementById('reservedPercentage');
+        const participantsPercentage = Math.min((participants / CONFIG.MAX_PARTICIPANTS) * 100, 100);
         
-        if (reservedProgress) reservedProgress.style.width = `${reservedPercentage}%`;
-        if (reservedPercentageElement) reservedPercentageElement.textContent = `${reservedPercentage.toFixed(1)}%`;
-
-        document.getElementById('daysToLaunch').textContent = daysToLaunch;
-
-        const tokensRemaining = CONFIG.TOTAL_TOKENS - tokensReserved;
-        document.getElementById('tokensRemaining').textContent = formatNumber(tokensRemaining);
-
-        const tokensInfo = document.getElementById('tokensInfo');
-        if (tokensInfo) tokensInfo.textContent = `de ${formatNumber(CONFIG.TOTAL_TOKENS)} total`;
-
-        const progressParticipants = (participants / CONFIG.MAX_PARTICIPANTS) * 100;
-        const progressFill = document.getElementById('progressFill');
-        if (progressFill) progressFill.style.width = `${Math.min(progressParticipants, 100)}%`;
-
+        this.setStyle('reservedProgress', 'width', `${reservedPercentage}%`);
+        this.setText('reservedPercentage', `${reservedPercentage.toFixed(1)}%`);
+        this.setStyle('progressFill', 'width', `${participantsPercentage}%`);
+        
+        // Update remaining slots
         const remainingSlots = CONFIG.MAX_PARTICIPANTS - participants;
-        const remainingSlotsElement = document.getElementById('remainingSlots');
-        if (remainingSlotsElement) remainingSlotsElement.textContent = `${remainingSlots.toLocaleString()} cupos disponibles`;
-
-        const airdropLimit = document.getElementById('airdropLimit');
-        if (airdropLimit) {
-            if (progressParticipants >= 80) {
-                airdropLimit.style.display = 'block';
-                const limitText = progressParticipants >= 90 ?
-                    '⚠️ ¡ÚLTIMOS CUPOS! El airdrop está por cerrarse' :
-                    '⚠️ Airdrop limitado - Quedan pocos cupos';
-                document.getElementById('limitText').textContent = limitText;
-            } else {
-                airdropLimit.style.display = 'none';
-            }
-        }
-    }
-}
-
-// Función para formatear números
-function formatNumber(num) {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    } else {
-        return num.toLocaleString();
-    }
-}
-
-// FUNCIÓN PRINCIPAL CORREGIDA PARA CONECTAR WALLETS
-async function connectToWallet(walletType) {
-    console.log(`Conectando ${walletType}...`);
+        this.setText('remainingSlots', `${remainingSlots.toLocaleString()} slots remaining`);
+        
+        // Show/hide limit warning
+        this.updateLimitWarning(participantsPercentage);
+    },
     
-    try {
-        // Verificar si estamos en localhost usando la URL actual
-        const isLocalhost = window.location.hostname === 'localhost' || 
-                           window.location.hostname === '127.0.0.1' ||
-                           window.location.hostname === '';
+    animateCounter(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
         
-        // En localhost, usar simulación
-        if (isLocalhost) {
-            console.log('🛠️ Modo desarrollo: Simulando conexión');
-            const fakeAddress = generateFakeAddress();
-            showNotification(`Modo desarrollo: ${walletType} simulada`, 'info');
-            return fakeAddress;
-        }
+        const currentValue = this.parseNumber(element.textContent);
+        const duration = 1000; // 1 second
+        const startTime = Date.now();
+        const startValue = currentValue;
         
-        // En producción, intentar conexión real
-        let publicKey = null;
-        let errorMessage = null;
-        
-        switch(walletType) {
-            case 'phantom':
-                if (window.solana && window.solana.isPhantom) {
-                    try {
-                        console.log('Phantom detectada, intentando conectar...');
-                        const response = await window.solana.connect();
-                        publicKey = response.publicKey.toString();
-                        console.log(`✅ Phantom conectada: ${publicKey}`);
-                    } catch (error) {
-                        errorMessage = `Phantom: ${error.message || 'Error desconocido'}`;
-                        console.error('Error Phantom:', error);
-                    }
-                } else {
-                    errorMessage = 'Phantom no está instalada. Instala la extensión desde phantom.app';
-                }
-                break;
-                
-            case 'solflare':
-                if (window.solflare) {
-                    try {
-                        console.log('Solflare detectada, intentando conectar...');
-                        let response;
-                        
-                        // Método 1: connect() moderno
-                        if (typeof window.solflare.connect === 'function') {
-                            response = await window.solflare.connect();
-                        }
-                        // Método 2: request() API
-                        else if (typeof window.solflare.request === 'function') {
-                            response = await window.solflare.request({ method: 'connect' });
-                        }
-                        // Método 3: Versión antigua
-                        else if (window.solflare._solflareWeb3 && window.solflare._solflareWeb3.connect) {
-                            response = await window.solflare._solflareWeb3.connect();
-                        }
-                        
-                        // Procesar respuesta
-                        if (response) {
-                            if (response.publicKey) {
-                                publicKey = response.publicKey.toString();
-                            } else if (Array.isArray(response) && response.length > 0) {
-                                publicKey = response[0];
-                            } else if (typeof response === 'string') {
-                                publicKey = response;
-                            }
-                        }
-                        
-                        if (publicKey) {
-                            console.log(`✅ Solflare conectada: ${publicKey}`);
-                        } else {
-                            errorMessage = 'Solflare: No se pudo obtener la dirección';
-                        }
-                    } catch (error) {
-                        errorMessage = `Solflare: ${error.message || 'Error desconocido'}`;
-                        console.error('Error Solflare:', error);
-                    }
-                } else {
-                    errorMessage = 'Solflare no está instalada. Instala la extensión desde solflare.com';
-                }
-                break;
-                
-            case 'backpack':
-                if (window.backpack) {
-                    try {
-                        console.log('Backpack detectada, intentando conectar...');
-                        let response;
-                        
-                        // Intentar diferentes métodos
-                        if (typeof window.backpack.connect === 'function') {
-                            response = await window.backpack.connect();
-                        } 
-                        else if (window.backpack.solana && typeof window.backpack.solana.connect === 'function') {
-                            response = await window.backpack.solana.connect();
-                        } 
-                        else if (typeof window.backpack.request === 'function') {
-                            response = await window.backpack.request({ method: 'connect' });
-                        }
-                        else if (window.backpack._backpackWeb3 && window.backpack._backpackWeb3.connect) {
-                            response = await window.backpack._backpackWeb3.connect();
-                        }
-                        
-                        if (response) {
-                            if (response.publicKey) {
-                                publicKey = response.publicKey.toString();
-                            } else if (typeof response === 'string') {
-                                publicKey = response;
-                            } else if (Array.isArray(response) && response.length > 0) {
-                                publicKey = response[0];
-                            }
-                        }
-                        
-                        if (publicKey) {
-                            console.log(`✅ Backpack conectada: ${publicKey}`);
-                        } else {
-                            errorMessage = 'Backpack: No se pudo obtener la dirección';
-                        }
-                    } catch (error) {
-                        errorMessage = `Backpack: ${error.message || 'Error desconocido'}`;
-                        console.error('Error Backpack:', error);
-                    }
-                } else {
-                    errorMessage = 'Backpack no está instalada. Instala la extensión desde backpack.app';
-                }
-                break;
-                
-            case 'uniswap':
-                try {
-                    const address = prompt('Ingresa tu dirección de wallet Solana (44 caracteres):');
-                    if (address) {
-                        const trimmedAddress = address.trim();
-                        // Validación básica de dirección Solana
-                        if (trimmedAddress.length === 44 && /^[1-9A-HJ-NP-Za-km-z]{44}$/.test(trimmedAddress)) {
-                            publicKey = trimmedAddress;
-                            console.log(`✅ Dirección manual aceptada: ${publicKey}`);
-                        } else {
-                            errorMessage = 'Dirección de wallet inválida. Las direcciones Solana tienen 44 caracteres.';
-                        }
-                    } else {
-                        errorMessage = 'Se requiere una dirección de wallet';
-                    }
-                } catch (error) {
-                    errorMessage = `Error con entrada manual: ${error.message}`;
-                }
-                break;
-                
-            default:
-                errorMessage = 'Tipo de wallet no soportado';
-        }
-        
-        // Si hubo error, mostrar notificación
-        if (errorMessage) {
-            console.error(`Error conectando ${walletType}:`, errorMessage);
-            showNotification(errorMessage, 'error');
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
             
-            // Si es error de wallet no instalada, ofrecer instalarla
-            if (errorMessage.includes('no está instalada')) {
-                const stores = {
-                    phantom: 'https://phantom.app/download',
-                    solflare: 'https://solflare.com/download',
-                    backpack: 'https://www.backpack.app/download'
-                };
-                
-                if (stores[walletType]) {
-                    const shouldInstall = confirm(`${walletType} no está instalada. ¿Quieres ir a la página de descarga?`);
-                    if (shouldInstall) {
-                        window.open(stores[walletType], '_blank');
-                    }
-                }
+            // Easing function
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+            const current = Math.floor(startValue + (targetValue - startValue) * easeOutQuart);
+            
+            element.textContent = this.formatNumber(current);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                element.textContent = this.formatNumber(targetValue);
+            }
+        };
+        
+        animate();
+    },
+    
+    parseNumber(text) {
+        const num = parseFloat(text.replace(/[^\d.]/g, ''));
+        if (text.includes('M')) return num * 1000000;
+        if (text.includes('K')) return num * 1000;
+        return num || 0;
+    },
+    
+    updateLimitWarning(percentage) {
+        const limitElement = document.getElementById('airdropLimit');
+        if (!limitElement) return;
+        
+        if (percentage >= 80) {
+            limitElement.style.display = 'block';
+            
+            let warningText = '';
+            let warningColor = '';
+            
+            if (percentage >= 95) {
+                warningText = '🚨 FINAL SLOTS! Airdrop closing soon';
+                warningColor = '#FF6B6B';
+            } else if (percentage >= 90) {
+                warningText = '⚠️ LIMITED SLOTS! Airdrop almost full';
+                warningColor = '#FFD166';
+            } else {
+                warningText = '📢 Limited availability - Join now';
+                warningColor = '#4A90E2';
             }
             
-            return null;
-        }
-        
-        if (!publicKey) {
-            showNotification('No se pudo obtener la dirección de la wallet', 'error');
-            return null;
-        }
-        
-        return publicKey;
-        
-    } catch (error) {
-        console.error(`Error conectando ${walletType}:`, error);
-        showNotification(`Error: ${error.message}`, 'error');
-        return null;
-    }
-}
-
-// Generar dirección falsa para desarrollo
-function generateFakeAddress() {
-    return 'So1' + Math.random().toString(36).substr(2, 43).toUpperCase();
-}
-
-// Registrar wallet en el airdrop
-async function registerWallet(walletAddress) {
-    try {
-        let data;
-        
-        if (appState.isProduction) {
-            const response = await fetch(`${API_BASE}/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    wallet: walletAddress,
-                    walletType: appState.selectedWallet,
-                    timestamp: new Date().toISOString()
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error API: ${response.status}`);
-            }
-            
-            data = await response.json();
+            document.getElementById('limitText').textContent = warningText;
+            document.getElementById('limitText').style.color = warningColor;
         } else {
-            data = await mockAPI.registerWallet(walletAddress, appState.selectedWallet);
+            limitElement.style.display = 'none';
         }
-
-        if (!data.success) {
-            throw new Error(data.error || 'Error registrando wallet');
+    },
+    
+    // ========== WALLET UI ==========
+    updateWalletUI() {
+        if (AppState.walletConnected && AppState.userData) {
+            // Show connected state
+            this.showElement('walletStatus');
+            this.hideElement('walletConnectContainer');
+            
+            // Update wallet address display
+            if (AppState.walletAddress) {
+                const shortAddress = `${AppState.walletAddress.substring(0, 6)}...${AppState.walletAddress.substring(AppState.walletAddress.length - 4)}`;
+                this.setText('walletAddress', shortAddress);
+            }
+            
+            // Enable wheel
+            const spinBtn = document.getElementById('spinBtn');
+            if (spinBtn) {
+                spinBtn.disabled = false;
+                spinBtn.innerHTML = '<i class="fas fa-redo-alt"></i> SPIN WHEEL';
+            }
+            
+            // Update wheel result message
+            const wheelResult = document.getElementById('wheelResult');
+            if (wheelResult) {
+                wheelResult.innerHTML = `
+                    <p style="color: var(--success);">
+                        <i class="fas fa-check-circle"></i> Wallet connected! Spin to win tokens.
+                    </p>
+                `;
+            }
+            
+            // Show referral section
+            this.showElement('referralSection');
+            
+            // Update referral UI
+            this.updateReferralUI();
+            
+            // Show user stats
+            this.updateUserStats();
         }
-
-        return data;
-    } catch (error) {
-        console.error('Error registrando wallet:', error);
-        showNotification('Error registrando wallet. Intenta nuevamente.', 'error');
-        throw error;
+    },
+    
+    updateUserStats() {
+        if (!AppState.userData) return;
+        
+        // Update token balance
+        const tokensElement = document.getElementById('userTokens');
+        if (tokensElement) {
+            tokensElement.textContent = `${this.formatNumber(AppState.userData.tokens || 1000)} $REGRET`;
+        }
+        
+        // Update referral count
+        const referralsElement = document.getElementById('referralCount');
+        if (referralsElement) {
+            referralsElement.textContent = AppState.userData.referralCount || 0;
+        }
+        
+        // Update earnings
+        const earningsElement = document.getElementById('referralEarnings');
+        if (earningsElement) {
+            const earnings = (AppState.userData.referralCount || 0) * CONFIG.REFERRAL_BONUS;
+            earningsElement.textContent = `${this.formatNumber(earnings)} $REGRET`;
+        }
+    },
+    
+    updateReferralUI() {
+        if (!AppState.userData) return;
+        
+        const referralSection = document.getElementById('referralSection');
+        if (!referralSection) return;
+        
+        // Generate referral code if needed
+        if (!AppState.userData.referralCode) {
+            AppState.userData.referralCode = PostgresApiService.generateReferralCode(AppState.walletAddress);
+        }
+        
+        // Update UI
+        this.setText('referralCode', AppState.userData.referralCode);
+        this.setText('referralCount', AppState.userData.referralCount || 0);
+        
+        // Update share link
+        const shareLink = document.getElementById('shareLink');
+        if (shareLink) {
+            shareLink.value = `${window.location.origin}?ref=${AppState.userData.referralCode}`;
+        }
+        
+        referralSection.style.display = 'block';
+    },
+    
+    updateWheelResult(prize, color, totalTokens) {
+        const wheelResult = document.getElementById('wheelResult');
+        if (!wheelResult) return;
+        
+        const colorMap = {
+            '#4A90E2': 'Blue',
+            '#00CC88': 'Green',
+            '#FFD166': 'Yellow',
+            '#9D4EDD': 'Purple',
+            '#FF6B6B': 'Red',
+            '#4ECDC4': 'Teal'
+        };
+        
+        const colorName = colorMap[color] || '';
+        
+        wheelResult.innerHTML = `
+            <div style="text-align: center;">
+                <h3 style="color: ${color}; margin-bottom: 10px; font-size: 1.3rem;">
+                    🎉 You won ${this.formatNumber(prize)} $REGRET!
+                </h3>
+                <p style="color: var(--text-muted); margin-bottom: 5px;">
+                    Total balance: <strong>${this.formatNumber(totalTokens)} $REGRET</strong>
+                </p>
+                ${colorName ? `<small style="color: #888;">Prize color: ${colorName}</small>` : ''}
+            </div>
+        `;
+    },
+    
+    // ========== UTILITY METHODS ==========
+    formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toLocaleString();
+    },
+    
+    setText(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) element.textContent = text;
+    },
+    
+    setStyle(elementId, property, value) {
+        const element = document.getElementById(elementId);
+        if (element) element.style[property] = value;
+    },
+    
+    showElement(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) element.style.display = 'block';
+    },
+    
+    hideElement(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) element.style.display = 'none';
+    },
+    
+    showSpinner(buttonId, text = 'Processing...') {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.setAttribute('data-original-html', originalHTML);
+            button.innerHTML = `<div class="spinner"></div> ${text}`;
+            button.disabled = true;
+        }
+    },
+    
+    resetButton(buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            const originalHTML = button.getAttribute('data-original-html') || 
+                                button.innerHTML.replace(`<div class="spinner"></div> `, '');
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        }
+    },
+    
+    createConfetti() {
+        const container = document.getElementById('confettiContainer');
+        if (!container) return;
+        
+        const colors = ['#FFD166', '#00CC88', '#4A90E2', '#9D4EDD', '#FF6B6B'];
+        const confettiCount = 150;
+        
+        // Clear previous confetti
+        container.innerHTML = '';
+        
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.cssText = `
+                position: absolute;
+                left: ${Math.random() * 100}vw;
+                top: -20px;
+                width: ${Math.random() * 12 + 6}px;
+                height: ${Math.random() * 12 + 6}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                border-radius: ${Math.random() > 0.5 ? '50%' : '0'};
+                animation: confettiRain ${1 + Math.random() * 2}s linear forwards;
+                z-index: 9999;
+                opacity: ${0.7 + Math.random() * 0.3};
+                transform: rotate(${Math.random() * 360}deg);
+            `;
+            
+            container.appendChild(confetti);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (confetti.parentNode === container) {
+                    container.removeChild(confetti);
+                }
+            }, 3000);
+        }
     }
-}
+};
 
-// Girar ruleta
-async function spinWheel() {
-    if (!appState.walletConnected || !appState.walletAddress) {
-        showNotification('Conecta tu wallet primero', 'error');
-        return;
+// ============================================================================
+// MAIN APPLICATION
+// ============================================================================
+
+class RegretAirdropApp {
+    constructor() {
+        this.isInitialized = false;
+        this.init();
     }
-
-    try {
+    
+    async init() {
+        if (this.isInitialized) return;
+        
+        console.log('🚀 Initializing $REGRET Airdrop Professional Edition');
+        console.log('📱 Version:', CONFIG.APP_VERSION);
+        console.log('🌐 Environment:', AppState.isProduction ? 'Production' : 'Development');
+        console.log('🔗 API Base:', CONFIG.API_BASE);
+        console.log('💾 Session ID:', AppState.sessionId);
+        
+        try {
+            // Load initial stats
+            await this.loadStats();
+            
+            // Setup event listeners
+            this.setupEventListeners();
+            
+            // Check for existing connection
+            this.checkExistingConnection();
+            
+            // Setup auto-refresh for stats
+            if (AppState.isProduction) {
+                setInterval(() => this.loadStats(), 30000); // Every 30 seconds
+            }
+            
+            // Setup activity tracker
+            this.setupActivityTracker();
+            
+            this.isInitialized = true;
+            console.log('✅ Application initialized successfully');
+            
+            // Show welcome notification
+            setTimeout(() => {
+                UI.showNotification('Welcome to $REGRET Airdrop! Connect your wallet to start.', 'info');
+            }, 1000);
+            
+        } catch (error) {
+            console.error('❌ Application initialization failed:', error);
+            UI.showNotification('Failed to initialize application. Please refresh the page.', 'error');
+        }
+    }
+    
+    async loadStats() {
+        try {
+            const response = await PostgresApiService.getStats();
+            
+            if (response.success) {
+                AppState.stats = response.data;
+                UI.updateStats(AppState.stats);
+                
+                // Store stats locally for offline use
+                if (response.localFallback) {
+                    console.log('📊 Using local fallback stats');
+                }
+            }
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+    
+    setupEventListeners() {
+        // Wallet selection
+        document.querySelectorAll('.wallet-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.selectWallet(option);
+            });
+            
+            option.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.selectWallet(option);
+                }
+            });
+        });
+        
+        // Connect button
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                await this.handleWalletConnect();
+            });
+        }
+        
+        // Disconnect button
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleWalletDisconnect();
+            });
+        }
+        
+        // Spin button
+        const spinBtn = document.getElementById('spinBtn');
+        if (spinBtn) {
+            spinBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                await this.handleWheelSpin();
+            });
+        }
+        
+        // Copy referral button
+        const copyBtn = document.getElementById('copyReferralBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleCopyReferral();
+            });
+        }
+        
+        // Share link copy
+        const shareBtn = document.querySelector('.share-link button');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleCopyShareLink();
+            });
+        }
+    }
+    
+    selectWallet(option) {
+        const walletType = option.dataset.wallet;
+        console.log('Selecting wallet:', walletType);
+        
+        // Update UI
+        document.querySelectorAll('.wallet-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        option.classList.add('selected');
+        AppState.selectedWallet = walletType;
+        
+        // Enable connect button
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.disabled = false;
+        }
+        
+        // Show notification
+        UI.showNotification(`Selected: ${walletType.charAt(0).toUpperCase() + walletType.slice(1)}`, 'info');
+    }
+    
+    async handleWalletConnect() {
+        if (!AppState.selectedWallet) {
+            UI.showNotification('Please select a wallet type first', 'error');
+            return;
+        }
+        
+        const connectBtn = document.getElementById('connectBtn');
+        UI.showSpinner('connectBtn', 'Connecting...');
+        
+        try {
+            // Connect to wallet
+            const walletAddress = await WalletService.connect(AppState.selectedWallet);
+            
+            if (!walletAddress) {
+                throw new Error('Failed to connect wallet');
+            }
+            
+            // Register wallet with Postgres API
+            UI.showNotification('Registering wallet...', 'info');
+            const registerResult = await PostgresApiService.registerWallet(walletAddress, AppState.selectedWallet);
+            
+            if (!registerResult.success) {
+                throw new Error(registerResult.error || 'Registration failed');
+            }
+            
+            // Update app state
+            AppState.walletAddress = walletAddress;
+            AppState.walletConnected = true;
+            AppState.userData = {
+                wallet: walletAddress,
+                walletType: AppState.selectedWallet,
+                referralCode: registerResult.data.referralCode,
+                tokens: registerResult.data.tokens,
+                referralCount: 0
+            };
+            
+            // Store in localStorage for auto-reconnect
+            localStorage.setItem('regret_wallet', walletAddress);
+            localStorage.setItem('regret_wallet_type', AppState.selectedWallet);
+            localStorage.setItem('regret_user_data', JSON.stringify(AppState.userData));
+            localStorage.setItem('regret_last_connection', new Date().toISOString());
+            
+            // Load referrals data
+            await this.loadReferralsData();
+            
+            // Update UI
+            UI.updateWalletUI();
+            
+            // Reload stats to reflect new user
+            await this.loadStats();
+            
+            // Show success
+            let message = registerResult.data.alreadyRegistered ? 
+                'Welcome back! Wallet reconnected.' : 
+                '🎉 Wallet connected! You received 1,000 $REGRET.';
+                
+            UI.showNotification(message, 'success');
+            UI.createConfetti();
+            
+            // Track successful connection
+            await PostgresApiService.trackEvent('user_registered', {
+                walletType: AppState.selectedWallet,
+                referralCode: registerResult.data.referralCode,
+                isNewUser: !registerResult.data.alreadyRegistered
+            });
+            
+            console.log('✅ Wallet connected and registered successfully');
+            
+        } catch (error) {
+            console.error('Wallet connection error:', error);
+            UI.showNotification(error.message || 'Failed to connect wallet', 'error');
+            
+            // Track failed connection
+            await PostgresApiService.trackEvent('connection_failed', {
+                walletType: AppState.selectedWallet,
+                error: error.message
+            });
+            
+        } finally {
+            UI.resetButton('connectBtn');
+        }
+    }
+    
+    async handleWheelSpin() {
+        if (!AppState.walletConnected || !AppState.walletAddress) {
+            UI.showNotification('Please connect your wallet first', 'error');
+            return;
+        }
+        
         const spinBtn = document.getElementById('spinBtn');
         const wheel = document.getElementById('wheel');
-        const wheelResult = document.getElementById('wheelResult');
         
-        spinBtn.disabled = true;
-        spinBtn.innerHTML = '<div class="spinner"></div> Girando...';
-
-        let data;
+        UI.showSpinner('spinBtn', 'Spinning...');
         
-        if (appState.isProduction) {
-            const response = await fetch(`${API_BASE}/spin`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    wallet: appState.walletAddress,
-                    timestamp: new Date().toISOString()
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error API: ${response.status}`);
+        try {
+            // Call Postgres API to spin wheel
+            const spinResult = await PostgresApiService.spinWheel(AppState.walletAddress);
+            
+            if (!spinResult.success) {
+                throw new Error(spinResult.error || 'Spin failed');
             }
             
-            data = await response.json();
-        } else {
-            data = await mockAPI.spinWheel(appState.walletAddress);
-        }
-
-        if (!data.success) {
-            throw new Error(data.error || 'Error girando ruleta');
-        }
-
-        // Animación de la rueda
-        const spinDegrees = 1800 + Math.random() * 1800;
-        wheel.style.transform = `rotate(${spinDegrees}deg)`;
-        
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        if (appState.userData) {
-            appState.userData.tokens = data.totalTokens;
-        }
-
-        const colorMap = {
-            '#4A90E2': 'azul',
-            '#00CC88': 'verde',
-            '#FFD166': 'amarillo',
-            '#9D4EDD': 'púrpura',
-            '#FF6B6B': 'rojo',
-            '#4ECDC4': 'turquesa'
-        };
-        
-        const colorName = colorMap[data.color] || '';
-
-        wheelResult.innerHTML = `
-            <h3 style="color: ${data.color || '#FFD166'};">¡Ganaste ${data.prize} $REGRET!</h3>
-            <p style="color: var(--text-muted);">Total acumulado: ${formatNumber(data.totalTokens)} $REGRET</p>
-            <small style="color: #666;">${colorName ? `Color: ${colorName}` : ''}</small>
-        `;
-
-        spinBtn.disabled = true;
-        spinBtn.innerHTML = '<i class="fas fa-clock"></i> VUELVE MAÑANA';
-
-        showNotification(`¡Ganaste ${data.prize} $REGRET en la ruleta!`, 'success');
-        createConfetti();
-
-        setTimeout(() => {
-            loadStats();
-        }, 2000);
-
-        setTimeout(() => {
-            spinBtn.disabled = false;
-            spinBtn.innerHTML = '<i class="fas fa-redo-alt"></i> GIRAR RULETA';
-        }, 10000);
-
-    } catch (error) {
-        console.error('Error girando ruleta:', error);
-        showNotification(error.message, 'error');
-        
-        const spinBtn = document.getElementById('spinBtn');
-        spinBtn.disabled = false;
-        spinBtn.innerHTML = '<i class="fas fa-redo-alt"></i> GIRAR RULETA';
-    }
-}
-
-// Cargar datos de referidos
-async function loadReferralData() {
-    if (!appState.walletAddress) return;
-
-    try {
-        let data;
-        
-        if (appState.isProduction) {
-            const response = await fetch(`${API_BASE}/referral?wallet=${appState.walletAddress}`);
-            if (!response.ok) {
-                throw new Error(`Error API: ${response.status}`);
+            // Animate wheel
+            if (wheel) {
+                const spinDegrees = 1800 + Math.random() * 1800;
+                wheel.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
+                wheel.style.transform = `rotate(${spinDegrees}deg)`;
             }
-            data = await response.json();
-        } else {
-            data = await mockAPI.getReferrals(appState.walletAddress);
-        }
-
-        if (data) {
-            if (!appState.userData) {
-                appState.userData = {};
+            
+            // Wait for animation
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Update user data
+            if (AppState.userData) {
+                AppState.userData.tokens = spinResult.data.totalTokens;
+                localStorage.setItem('regret_user_data', JSON.stringify(AppState.userData));
             }
-            appState.userData.referralCount = data.referralCount || 0;
-            appState.userData.referrals = data.referrals || [];
-            appState.userData.referralEarned = data.totalEarned || 0;
-            updateReferralUI();
-        }
-    } catch (error) {
-        console.error('Error cargando referidos:', error);
-    }
-}
-
-// Actualizar UI de referidos
-function updateReferralUI() {
-    if (!appState.userData) return;
-    
-    if (!appState.userData.referralCode) {
-        appState.userData.referralCode = `REGRET-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-    }
-    
-    document.getElementById('referralCode').textContent = appState.userData.referralCode;
-    document.getElementById('referralCount').textContent = appState.userData.referralCount || 0;
-    document.getElementById('referralSection').style.display = 'block';
-}
-
-// Actualizar UI completa
-function updateUI() {
-    if (appState.walletConnected && appState.userData) {
-        const walletStatus = document.getElementById('walletStatus');
-        const walletAddress = document.getElementById('walletAddress');
-        
-        if (walletStatus) {
-            walletStatus.style.display = 'flex';
-            document.getElementById('walletConnectContainer').style.display = 'none';
-        }
-        
-        if (walletAddress) {
-            walletAddress.textContent = `${appState.walletAddress.slice(0, 6)}...${appState.walletAddress.slice(-4)}`;
-        }
-
-        updateReferralUI();
-
-        const spinBtn = document.getElementById('spinBtn');
-        const wheelResult = document.getElementById('wheelResult');
-        
-        if (spinBtn) spinBtn.disabled = false;
-        if (wheelResult) {
-            wheelResult.innerHTML = '<p><i class="fas fa-check-circle" style="color: var(--secondary);"></i> ¡Listo para girar!</p>';
-        }
-        
-        setTimeout(() => {
-            loadStats();
-        }, 1000);
-    }
-}
-
-// Verificar conexión existente
-async function checkExistingConnection() {
-    const savedWallet = localStorage.getItem('regret_wallet');
-    const savedWalletType = localStorage.getItem('regret_wallet_type');
-
-    if (savedWallet && savedWalletType) {
-        console.log('Wallet guardada detectada:', savedWallet);
-        
-        // Simplemente restaurar la sesión guardada
-        appState.walletAddress = savedWallet;
-        appState.selectedWallet = savedWalletType;
-        appState.walletConnected = true;
-
-        appState.userData = {
-            wallet: savedWallet,
-            referralCode: `REGRET-${savedWallet.slice(0, 8).toUpperCase()}`,
-            tokens: 1000,
-            referralCount: Math.floor(Math.random() * 5)
-        };
-
-        updateUI();
-        showNotification('Wallet reconectada automáticamente', 'success');
-    }
-}
-
-// Configurar event listeners
-function setupEventListeners() {
-    // Selección de wallet
-    document.querySelectorAll('.wallet-option').forEach(option => {
-        option.addEventListener('click', () => {
-            document.querySelectorAll('.wallet-option').forEach(el => {
-                el.classList.remove('selected');
+            
+            // Update UI
+            UI.updateWheelResult(spinResult.data.prize, spinResult.data.color, spinResult.data.totalTokens);
+            UI.updateUserStats();
+            
+            // Show success
+            UI.showNotification(`🎊 You won ${spinResult.data.prize} $REGRET!`, 'success');
+            UI.createConfetti();
+            
+            // Disable spin button for 24 hours
+            spinBtn.disabled = true;
+            spinBtn.innerHTML = '<i class="fas fa-clock"></i> COME BACK TOMORROW';
+            
+            // Re-enable after 10 seconds (for demo) - in production this would be 24 hours
+            setTimeout(() => {
+                spinBtn.disabled = false;
+                spinBtn.innerHTML = '<i class="fas fa-redo-alt"></i> SPIN WHEEL';
+            }, 10000);
+            
+            // Track spin
+            await PostgresApiService.trackEvent('wheel_spin', {
+                prize: spinResult.data.prize,
+                totalTokens: spinResult.data.totalTokens
             });
-            option.classList.add('selected');
-            appState.selectedWallet = option.dataset.wallet;
-            document.getElementById('connectBtn').disabled = false;
+            
+        } catch (error) {
+            console.error('Wheel spin error:', error);
+            UI.showNotification(error.message || 'Failed to spin wheel', 'error');
+            UI.resetButton('spinBtn');
+        }
+    }
+    
+    async loadReferralsData() {
+        if (!AppState.walletAddress) return;
+        
+        try {
+            const referralsResult = await PostgresApiService.getReferrals(AppState.walletAddress);
+            
+            if (referralsResult.success && AppState.userData) {
+                AppState.userData.referralCount = referralsResult.data.referralCount || 0;
+                AppState.userData.referrals = referralsResult.data.referrals || [];
+                AppState.userData.referralEarned = referralsResult.data.totalEarned || 0;
+                
+                UI.updateReferralUI();
+                UI.updateUserStats();
+            }
+        } catch (error) {
+            console.error('Error loading referrals:', error);
+        }
+    }
+    
+    handleCopyReferral() {
+        if (!AppState.userData?.referralCode) {
+            UI.showNotification('No referral code available', 'error');
+            return;
+        }
+        
+        navigator.clipboard.writeText(AppState.userData.referralCode)
+            .then(() => {
+                UI.showNotification('Referral code copied to clipboard!', 'success');
+                
+                // Track copy event
+                PostgresApiService.trackEvent('referral_code_copied', {
+                    referralCode: AppState.userData.referralCode
+                });
+            })
+            .catch(err => {
+                console.error('Copy failed:', err);
+                UI.showNotification('Failed to copy. Please copy manually.', 'error');
+            });
+    }
+    
+    handleCopyShareLink() {
+        const shareLink = document.getElementById('shareLink');
+        if (!shareLink) return;
+        
+        shareLink.select();
+        document.execCommand('copy');
+        
+        UI.showNotification('Share link copied to clipboard!', 'success');
+        
+        // Track share event
+        PostgresApiService.trackEvent('share_link_copied');
+    }
+    
+    handleWalletDisconnect() {
+        console.log('Disconnecting wallet...');
+        
+        // Clear app state
+        AppState.walletConnected = false;
+        AppState.walletAddress = null;
+        AppState.userData = null;
+        AppState.selectedWallet = null;
+        
+        // Clear localStorage
+        localStorage.removeItem('regret_wallet');
+        localStorage.removeItem('regret_wallet_type');
+        localStorage.removeItem('regret_last_connection');
+        
+        // Update UI
+        UI.hideElement('walletStatus');
+        UI.showElement('walletConnectContainer');
+        UI.hideElement('referralSection');
+        
+        // Reset wallet selection
+        document.querySelectorAll('.wallet-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        // Disable connect button
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.disabled = true;
+        }
+        
+        // Reset wheel
+        const spinBtn = document.getElementById('spinBtn');
+        if (spinBtn) {
+            spinBtn.disabled = true;
+            spinBtn.innerHTML = '<i class="fas fa-redo-alt"></i> SPIN WHEEL';
+        }
+        
+        const wheelResult = document.getElementById('wheelResult');
+        if (wheelResult) {
+            wheelResult.innerHTML = '<p style="color: var(--text-muted);"><i class="fas fa-info-circle"></i> Connect your wallet to spin the wheel</p>';
+        }
+        
+        const wheel = document.getElementById('wheel');
+        if (wheel) {
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+        }
+        
+        UI.showNotification('Wallet disconnected', 'info');
+        
+        // Track disconnect
+        PostgresApiService.trackEvent('wallet_disconnected');
+    }
+    
+    checkExistingConnection() {
+        const savedWallet = localStorage.getItem('regret_wallet');
+        const savedWalletType = localStorage.getItem('regret_wallet_type');
+        const savedUserData = localStorage.getItem('regret_user_data');
+        const lastConnection = localStorage.getItem('regret_last_connection');
+        
+        if (savedWallet && savedWalletType && savedUserData && lastConnection) {
+            try {
+                // Check if connection is recent (within 7 days)
+                const lastConnectionDate = new Date(lastConnection);
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                
+                if (lastConnectionDate > sevenDaysAgo) {
+                    console.log('Restoring previous session...');
+                    
+                    AppState.walletAddress = savedWallet;
+                    AppState.selectedWallet = savedWalletType;
+                    AppState.walletConnected = true;
+                    AppState.userData = JSON.parse(savedUserData);
+                    
+                    UI.updateWalletUI();
+                    UI.showNotification('Welcome back! Session restored.', 'success');
+                    
+                    // Load fresh data
+                    this.loadReferralsData();
+                    this.loadStats();
+                } else {
+                    console.log('Session expired, clearing...');
+                    this.handleWalletDisconnect();
+                }
+            } catch (error) {
+                console.error('Error restoring session:', error);
+                this.handleWalletDisconnect();
+            }
+        }
+    }
+    
+    setupActivityTracker() {
+        // Track user activity
+        ['click', 'mousemove', 'keypress', 'scroll'].forEach(event => {
+            window.addEventListener(event, () => {
+                AppState.lastActivity = Date.now();
+            });
+        });
+        
+        // Check for inactivity every minute
+        setInterval(() => {
+            const inactiveTime = Date.now() - AppState.lastActivity;
+            const fifteenMinutes = 15 * 60 * 1000;
+            
+            if (inactiveTime > fifteenMinutes && AppState.walletConnected) {
+                console.log('User inactive for 15 minutes');
+                // Could add auto-logout here if needed
+            }
+        }, 60000);
+    }
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM Content Loaded');
+    
+    // Initialize app
+    window.regretApp = new RegretAirdropApp();
+    
+    // Export for debugging
+    window.AppState = AppState;
+    window.PostgresApiService = PostgresApiService;
+    window.WalletService = WalletService;
+    window.UI = UI;
+    
+    console.log('🎮 App ready. Open console for debugging.');
+});
+
+// Global error handler
+window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
+    
+    // Don't show error notifications for minor errors
+    if (!event.error.message.includes('ResizeObserver') && 
+        !event.error.message.includes('fetch')) {
+        UI.showNotification('An unexpected error occurred. Please refresh the page.', 'error');
+    }
+});
+
+// Network status monitoring
+window.addEventListener('online', () => {
+    console.log('🌐 Network connection restored');
+    UI.showNotification('Back online!', 'success');
+});
+
+window.addEventListener('offline', () => {
+    console.log('🌐 Network connection lost');
+    UI.showNotification('You are offline. Some features may not work.', 'warning');
+});
+
+// Service Worker registration (for PWA)
+if ('serviceWorker' in navigator && AppState.isProduction) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('ServiceWorker registration failed:', err);
         });
     });
-
-    // Botón de conexión principal
-    const connectBtn = document.getElementById('connectBtn');
-    if (connectBtn) {
-        connectBtn.addEventListener('click', async () => {
-            if (!appState.selectedWallet) {
-                showNotification('Selecciona una wallet primero', 'error');
-                return;
-            }
-
-            connectBtn.innerHTML = '<div class="spinner"></div> Conectando...';
-            connectBtn.disabled = true;
-
-            const walletAddress = await connectToWallet(appState.selectedWallet);
-
-            if (walletAddress) {
-                appState.walletAddress = walletAddress;
-                appState.walletConnected = true;
-
-                try {
-                    const result = await registerWallet(walletAddress);
-                    appState.userData = {
-                        wallet: walletAddress,
-                        referralCode: result.referralCode,
-                        tokens: result.tokens || 1000,
-                        referralCount: 0
-                    };
-
-                    localStorage.setItem('regret_wallet', walletAddress);
-                    localStorage.setItem('regret_wallet_type', appState.selectedWallet);
-
-                    await loadReferralData();
-
-                    updateUI();
-                    await loadStats();
-
-                    showNotification('¡Wallet conectada! Has reclamado 1,000 $REGRET', 'success');
-                    createConfetti();
-
-                } catch (error) {
-                    showNotification(error.message, 'error');
-                }
-            }
-
-            connectBtn.innerHTML = '<i class="fas fa-plug"></i> CONECTAR WALLET Y RECLAMAR 1,000 $REGRET';
-            connectBtn.disabled = false;
-        });
-    }
-
-    // Botón de desconexión
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    if (disconnectBtn) {
-        disconnectBtn.addEventListener('click', () => {
-            appState.walletConnected = false;
-            appState.walletAddress = null;
-            appState.userData = null;
-
-            localStorage.removeItem('regret_wallet');
-            localStorage.removeItem('regret_wallet_type');
-
-            document.getElementById('walletStatus').style.display = 'none';
-            document.getElementById('walletConnectContainer').style.display = 'flex';
-            document.getElementById('referralSection').style.display = 'none';
-
-            document.getElementById('spinBtn').disabled = true;
-            document.getElementById('wheelResult').innerHTML =
-                '<p style="color: var(--text-muted);"><i class="fas fa-info-circle"></i> Conecta tu wallet para girar la ruleta</p>';
-
-            const wheel = document.getElementById('wheel');
-            if (wheel) wheel.style.transform = 'rotate(0deg)';
-
-            document.querySelectorAll('.wallet-option').forEach(el => {
-                el.classList.remove('selected');
-            });
-            appState.selectedWallet = null;
-            document.getElementById('connectBtn').disabled = true;
-
-            showNotification('Wallet desconectada', 'info');
-        });
-    }
-
-    // Botón de girar ruleta
-    const spinBtn = document.getElementById('spinBtn');
-    if (spinBtn) {
-        spinBtn.addEventListener('click', spinWheel);
-    }
-
-    // Botón de copiar código de referido
-    const copyReferralBtn = document.getElementById('copyReferralBtn');
-    if (copyReferralBtn) {
-        copyReferralBtn.addEventListener('click', () => {
-            if (appState.userData && appState.userData.referralCode) {
-                navigator.clipboard.writeText(appState.userData.referralCode)
-                    .then(() => {
-                        showNotification('Código copiado al portapapeles', 'success');
-                    })
-                    .catch(err => {
-                        console.error('Error copiando código:', err);
-                        showNotification('Error copiando código', 'error');
-                    });
-            }
-        });
-    }
 }
 
-// Función de notificaciones
-function showNotification(message, type = 'info') {
-    const notification = document.getElementById('notification');
-    const notificationText = document.getElementById('notificationText');
-
-    if (!notification || !notificationText) return;
-
-    notificationText.textContent = message;
-    notification.className = 'notification';
-    notification.classList.add('show');
-    notification.classList.add(type);
-
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-}
-
-// Función de confetti
-function createConfetti() {
-    const container = document.getElementById('confettiContainer');
-    if (!container) return;
-
-    const colors = ['#FFD166', '#00CC88', '#4A90E2', '#9D4EDD'];
-    const confettiCount = 50;
-
-    for (let i = 0; i < confettiCount; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.width = Math.random() * 10 + 5 + 'px';
-        confetti.style.height = Math.random() * 10 + 5 + 'px';
-        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-        confetti.style.animation = `confettiRain ${1 + Math.random() * 2}s linear forwards`;
-        container.appendChild(confetti);
-
-        setTimeout(() => {
-            if (confetti.parentNode === container) {
-                container.removeChild(confetti);
-            }
-        }, 3000);
-    }
-}
-
-// Exportar para debugging
-window.appState = appState;
-window.connectToWallet = connectToWallet;
-window.showNotification = showNotification;
-window.loadStats = loadStats;
-
-console.log('Script $REGRET cargado correctamente');
+// Export debug function
+window.debugApp = () => {
+    console.log('=== DEBUG INFO ===');
+    console.log('AppState:', AppState);
+    console.log('Local Storage:', {
+        wallet: localStorage.getItem('regret_wallet'),
+        userData: localStorage.getItem('regret_user_data'),
+        lastConnection: localStorage.getItem('regret_last_connection')
+    });
+    console.log('Wallets:', {
+        phantom: window.solana?.isPhantom,
+        solflare: !!window.solflare,
+        backpack: !!window.backpack
+    });
+    console.log('==================');
+};

@@ -1,116 +1,142 @@
-const { query } = require('../lib/database');
-const { verifyWallet } = require('../lib/utils');
+import { db } from '@vercel/postgres';
 
-module.exports = async (req, res) => {
-  // Habilitar CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { wallet, referralCode, walletType } = req.body;
-    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const { wallet, walletType, sessionId, userAgent, referrer, utmSource, utmMedium, utmCampaign } = req.body;
 
-    // Validar wallet
-    if (!verifyWallet(wallet)) {
-      return res.status(400).json({ error: 'Wallet inválida' });
+    if (!wallet || !walletType) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Verificar límite de participantes
-    const stats = await query('SELECT * FROM stats WHERE id = 1');
-    if (stats.rows[0].total_participants >= 5000) {
-      return res.status(400).json({ 
-        error: 'Airdrop completo. Ya hemos alcanzado el límite de 5,000 participantes.' 
+    // Validate Solana address (44 characters, base58)
+    if (wallet.length !== 44 || !/^[1-9A-HJ-NP-Za-km-z]{44}$/.test(wallet)) {
+      return res.status(400).json({ error: 'Invalid Solana address' });
+    }
+
+    const client = await db.connect();
+
+    // Check if wallet already exists
+    const existingWallet = await client.sql`
+      SELECT * FROM participants WHERE wallet_address = ${wallet}
+    `;
+
+    if (existingWallet.rows.length > 0) {
+      await client.release();
+      
+      // Update last active
+      await client.sql`
+        UPDATE participants 
+        SET last_active = NOW(), 
+            session_id = ${sessionId || null}
+        WHERE wallet_address = ${wallet}
+      `;
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          referralCode: existingWallet.rows[0].referral_code,
+          tokens: existingWallet.rows[0].tokens,
+          message: 'Wallet already registered',
+          alreadyRegistered: true
+        }
       });
     }
 
-    // Verificar si ya está registrado
-    const existing = await query(
-      'SELECT * FROM participants WHERE wallet_address = $1',
-      [wallet]
-    );
-
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ 
-        error: 'Esta wallet ya está registrada' 
-      });
-    }
-
-    // Generar código de referido único
-    const generatedReferralCode = `REGRET${wallet.slice(0, 8).toUpperCase()}`;
-
-    // Iniciar transacción
-    await query('BEGIN');
-
-    // Registrar participante
-    await query(
-      `INSERT INTO participants 
-       (wallet_address, referral_code, ip_address, user_agent) 
-       VALUES ($1, $2, $3, $4)`,
-      [wallet, generatedReferralCode, ip, userAgent]
-    );
-
-    // Procesar referido si existe
-    if (referralCode && referralCode !== generatedReferralCode) {
-      const referrer = await query(
-        'SELECT * FROM participants WHERE referral_code = $1',
-        [referralCode]
-      );
-
-      if (referrer.rows.length > 0) {
-        // Registrar referido
-        await query(
-          `INSERT INTO referrals (referrer_wallet, referred_wallet)
-           VALUES ($1, $2)`,
-          [referrer.rows[0].wallet_address, wallet]
-        );
-
-        // Actualizar contador del referidor
-        await query(
-          `UPDATE participants 
-           SET referral_count = referral_count + 1,
-               referral_tokens = referral_tokens + 500,
-               tokens = tokens + 500
-           WHERE wallet_address = $1`,
-          [referrer.rows[0].wallet_address]
-        );
+    // Generate unique referral code
+    const referralCode = 'REGRET-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+    
+    // Check if referral code is unique
+    let isUnique = false;
+    let attempts = 0;
+    let finalReferralCode = referralCode;
+    
+    while (!isUnique && attempts < 5) {
+      const existingCode = await client.sql`
+        SELECT * FROM participants WHERE referral_code = ${finalReferralCode}
+      `;
+      
+      if (existingCode.rows.length === 0) {
+        isUnique = true;
+      } else {
+        finalReferralCode = 'REGRET-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        attempts++;
       }
     }
 
-    // Actualizar estadísticas globales
-    await query(
-      `UPDATE stats 
-       SET total_participants = total_participants + 1,
-           tokens_reserved = tokens_reserved + 1000,
-           last_updated = CURRENT_TIMESTAMP
-       WHERE id = 1`
-    );
+    // Insert new participant
+    await client.sql`
+      INSERT INTO participants (
+        wallet_address,
+        wallet_type,
+        referral_code,
+        tokens,
+        session_id,
+        user_agent,
+        referrer,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        registered_at,
+        last_active
+      ) VALUES (
+        ${wallet},
+        ${walletType},
+        ${finalReferralCode},
+        ${1000},
+        ${sessionId || null},
+        ${userAgent || ''},
+        ${referrer || ''},
+        ${utmSource || null},
+        ${utmMedium || null},
+        ${utmCampaign || null},
+        NOW(),
+        NOW()
+      )
+    `;
 
-    await query('COMMIT');
+    // Update global stats
+    await client.sql`
+      UPDATE global_stats 
+      SET total_participants = total_participants + 1,
+          tokens_reserved = tokens_reserved + 1000,
+          participants_today = participants_today + 1
+      WHERE id = 1
+    `;
 
-    res.status(200).json({
+    await client.release();
+
+    return res.status(200).json({
       success: true,
-      message: '¡Registro exitoso! Has reclamado 1,000 $REGRET',
-      referralCode: generatedReferralCode,
-      tokens: 1000
+      data: {
+        referralCode: finalReferralCode,
+        tokens: 1000,
+        message: 'Wallet registered successfully'
+      }
     });
 
   } catch (error) {
-    await query('ROLLBACK');
-    console.error('Error en registro:', error);
-    res.status(500).json({ 
-      error: 'Error interno del servidor',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    console.error('Registration error:', error);
+    
+    // Check for duplicate key error
+    if (error.message.includes('duplicate key') || error.code === '23505') {
+      return res.status(200).json({
+        success: true,
+        data: {
+          referralCode: 'REGRET-' + wallet.substring(0, 8).toUpperCase(),
+          tokens: 1000,
+          message: 'Wallet already registered (race condition)',
+          alreadyRegistered: true
+        }
+      });
+    }
+    
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
     });
   }
-};
+}
