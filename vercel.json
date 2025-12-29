@@ -3,7 +3,11 @@
   "builds": [
     {
       "src": "api/**/*.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": { 
+        "maxLambdaSize": "15mb",
+        "includeFiles": ["api/**"]
+      }
     },
     {
       "src": "*.html",
@@ -25,15 +29,25 @@
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, Origin, Authorization"
+        "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, Origin, Authorization",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
       }
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/index.html",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      }
     }
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 10,
+      "memory": 1024
+    }
   }
 }

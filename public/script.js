@@ -9,10 +9,23 @@ const CONFIG = {
     TOTAL_TOKENS: 10000000,
     
     // API Configuration for Vercel
-    API_BASE: window.location.hostname === 'localhost' || 
-              window.location.hostname === '127.0.0.1' ||
-              window.location.hostname.includes('.local') ? 
-              'http://localhost:3000/api' : '/api',
+     // API Configuration CORREGIDA
+    API_BASE: window.location.hostname.includes('localhost') ? 
+              'http://localhost:3000/api' : 
+              '/api',
+    
+    // O MEJOR, detecta automáticamente:
+    getApiBase() {
+        const isLocal = window.location.hostname.includes('localhost') || 
+                       window.location.hostname.includes('127.0.0.1');
+        
+        if (isLocal) {
+            return 'http://localhost:3000/api';
+        }
+        
+        // En producción, usa ruta relativa
+        return '/api';
+    },
     
     // Network Configuration
     NETWORK: 'mainnet-beta',
@@ -21,6 +34,8 @@ const CONFIG = {
     // App Settings
     APP_VERSION: '1.0.0',
     APP_NAME: '$REGRET Airdrop'
+
+    
 };
 
 // ============================================================================

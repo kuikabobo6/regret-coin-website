@@ -8,14 +8,13 @@
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel start",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "logs": "vercel logs"
   },
   "dependencies": {
-    "@vercel/postgres": "^0.5.0",
-    "cors": "^2.8.5"
+    "@vercel/postgres": "^0.5.0"
   },
   "devDependencies": {
-    "@vercel/node": "^2.0.0",
-    "vercel": "^28.16.0"
+    "@vercel/node": "^2.0.0"
   }
 }
